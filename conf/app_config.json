@@ -1,0 +1,22 @@
+{
+  "logLevel": "debug",
+  "database": {
+    "host": "localhost",
+    "port": "5432",
+    "database": "postgres",
+    "username": "postgres",
+    "password": "postgres"
+  },
+  "settings": {
+    "startYear": 2023,
+    "startMonth": 1,
+    "startMoney": 100000,
+    "gui": {
+      "cellSizeDp": 100
+    },
+    "mainCategoryOrder": {
+      "Доходы": 0,
+      "Расходы": 1
+    }
+  }
+}
