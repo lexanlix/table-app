@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"table-app/domain"
+	"table-app/entity"
 	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
@@ -20,14 +21,15 @@ type SumWindow struct {
 	sumFrame  *core.Frame
 	tFields   []*core.TextField
 
-	controller TableController
-	cell       domain.Cell
-	sum        int
-	updateChan chan domain.Cell
+	controller    TableController
+	cell          domain.Cell
+	sum           int
+	updateChan    chan domain.Cell
+	updateSumChan chan entity.MonthYear
 }
 
 func NewSumWindow(logger log.Logger, mainFrame *core.Frame, cell domain.Cell, controller TableController,
-	updateChan chan domain.Cell) *SumWindow {
+	updateChan chan domain.Cell, updateSumChan chan entity.MonthYear) *SumWindow {
 	sumBody := core.NewBody("Sum").SetTitle(cell.Category)
 	sumBody.Styler(func(s *styles.Style) {
 		s.Align.Self = styles.Center
@@ -68,15 +70,16 @@ func NewSumWindow(logger log.Logger, mainFrame *core.Frame, cell domain.Cell, co
 	buttonsFrame.SetName("buttonsFrame")
 
 	sumWindow := &SumWindow{
-		logger:     logger,
-		mainFrame:  mainFrame,
-		sumDialog:  sumBody,
-		sumFrame:   sumFrame,
-		controller: controller,
-		cell:       cell,
-		tFields:    tFields,
-		updateChan: updateChan,
-		sum:        0,
+		logger:        logger,
+		mainFrame:     mainFrame,
+		sumDialog:     sumBody,
+		sumFrame:      sumFrame,
+		controller:    controller,
+		cell:          cell,
+		tFields:       tFields,
+		updateChan:    updateChan,
+		updateSumChan: updateSumChan,
+		sum:           0,
 	}
 	sumWindow.addButtons(buttonsFrame)
 	textSum := sumWindow.addTextSum(textSumFrame)
@@ -128,6 +131,13 @@ func (s *SumWindow) addButtons(buttonsFrame *core.Frame) {
 
 		if s.updateChan != nil {
 			s.updateChan <- s.cell
+		}
+
+		if s.updateSumChan != nil {
+			s.updateSumChan <- entity.MonthYear{
+				Month: int(s.cell.Month),
+				Year:  s.cell.Year,
+			}
 		}
 
 		s.close()

@@ -1,15 +1,18 @@
 package gui
 
 import (
+	"context"
 	"strconv"
 	"sync"
 
 	"table-app/domain"
+	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
 )
 
 type Updater struct {
+	logger   log.Logger
 	guiCells map[string]*core.TextField
 
 	lock       sync.Mutex
@@ -17,8 +20,9 @@ type Updater struct {
 	updateChan chan domain.Cell
 }
 
-func NewUpdater() *Updater {
+func NewUpdater(logger log.Logger) *Updater {
 	return &Updater{
+		logger:     logger,
 		guiCells:   make(map[string]*core.TextField),
 		lock:       sync.Mutex{},
 		wgGroup:    sync.WaitGroup{},
@@ -43,6 +47,8 @@ func (u *Updater) start() {
 				u.lock.Lock()
 				tField, ok := u.guiCells[compositeId]
 				if !ok {
+					u.logger.Error(context.Background(), "cell not found by id",
+						log.String("compositeId", compositeId))
 					continue
 				}
 
