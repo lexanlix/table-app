@@ -8,6 +8,7 @@ import (
 
 	"table-app/conf"
 	"table-app/domain"
+	"table-app/entity"
 	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
@@ -24,6 +25,7 @@ type App struct {
 	controller TableController
 	settings   conf.Setting
 	updater    *Updater
+	sumUpdater *SumUpdater
 
 	frames    []*core.Frame
 	txtFields []*core.TextField
@@ -38,7 +40,8 @@ func NewApp(logger log.Logger, cfg Config, controller TableController, settings 
 		s.Pos.X.Dp(0)
 	})
 
-	updater := NewUpdater()
+	updater := NewUpdater(logger)
+	sumUpdater := NewSumUpdater(logger, controller)
 
 	body.OnClose(func(e events.Event) {
 		ctx := context.Background()
@@ -50,6 +53,7 @@ func NewApp(logger log.Logger, cfg Config, controller TableController, settings 
 		}
 
 		updater.Close()
+		sumUpdater.Close()
 		shutdownFunc()
 
 		logger.Info(ctx, "close completed")
@@ -61,6 +65,7 @@ func NewApp(logger log.Logger, cfg Config, controller TableController, settings 
 		controller: controller,
 		settings:   settings,
 		updater:    updater,
+		sumUpdater: sumUpdater,
 		frames:     []*core.Frame{},
 		txtFields:  []*core.TextField{},
 		texts:      []*core.Text{},
@@ -83,6 +88,7 @@ func (a *App) Upgrade(data *domain.GuiTableData) {
 
 func (a *App) Run() {
 	a.updater.Start()
+	a.sumUpdater.Start()
 	a.appBody.RunMainWindow()
 }
 
@@ -279,7 +285,8 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 								}
 							}
 
-							sumWindow := NewSumWindow(a.logger, frame, cell, a.controller, a.updater.updateChan)
+							sumWindow := NewSumWindow(a.logger, frame, cell, a.controller,
+								a.updater.updateChan, a.sumUpdater.updateChan)
 							sumWindow.Run(tField)
 						})
 
@@ -310,6 +317,11 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 								return
 							}
 
+							a.sumUpdater.updateChan <- entity.MonthYear{
+								Month: month,
+								Year:  year,
+							}
+
 							tField.SetText(FormatInt(val))
 							core.MessageSnackbar(mainFrame, "Введено: "+tField.Text())
 						})
@@ -334,7 +346,16 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 				tField.Styler(func(s *styles.Style) {
 					s.Min.X.Dp(a.settings.Gui.CellSizeDp)
 				})
-				tField.SetText(FormatInt(data.GetConsumptionSum(month, year), addMinus))
+
+				a.sumUpdater.AddConsumptionField(month, year, tField)
+			})
+
+			tree.AddAt(p, "balance_tField", func(tField *core.TextField) {
+				tField.Styler(func(s *styles.Style) {
+					s.Min.X.Dp(a.settings.Gui.CellSizeDp)
+				})
+
+				a.sumUpdater.AddBalanceField(month, year, tField)
 			})
 		})
 	}

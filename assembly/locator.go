@@ -47,20 +47,29 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 
 	cellsCache := repository.NewCellsCache()
 	cellsCache.InitCache(cellsData)
+	cellsList := cellsCache.GetList()
 
 	categoryCache := repository.NewCategoryCache(cfg.Settings.MainCategoryOrder)
 	categoryCache.InitCache(categoryList)
+	categoryArray := categoryCache.GetCategoryArray()
+
+	calculationCache := repository.NewCalculationCache(cfg.Settings)
+	err = calculationCache.InitCache(cellsList, categoryArray)
+	if err != nil {
+		return nil, errors.WithMessage(err, "init calculation cache")
+	}
 
 	tableService := service.NewTable(l.logger, cellsCache, tableRepo, cfg.Settings)
 	categoryService := service.NewCategory(l.logger, categoryCache, categoryRepo)
+	calculationService := service.NewCalculation(calculationCache, cellsCache, categoryCache, cfg.Settings)
 
-	tableCtrl := controller.NewTable(l.logger, tableService, categoryService)
+	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService)
 
 	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, cfg.Settings, shutdownFunc)
 
 	guiApp.Upgrade(&domain.GuiTableData{
-		Categories:        categoryCache.GetCategoryArray(),
-		ValuesList:        cellsCache.GetList(),
+		Categories:        categoryArray,
+		ValuesList:        cellsList,
 		MainCategoryOrder: cfg.Settings.MainCategoryOrder,
 	})
 
