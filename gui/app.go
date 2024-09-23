@@ -259,7 +259,7 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 			s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
 			s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 			s.Gap.Zero()
-			s.Border.Offset.Top.Dp(1)
+			s.Border.Width.Top.Dp(1)
 			s.Border.Width.Bottom.Dp(1)
 			s.CenterAll()
 
@@ -287,7 +287,7 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
 		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 		s.Gap.Zero()
-		s.Border.Offset.Top.Dp(1)
+		s.Border.Width.Top.Dp(1)
 		s.Border.Width.Bottom.Dp(1)
 		s.CenterAll()
 		s.Background = ColorPurple
@@ -479,7 +479,6 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 	resultFrame.Styler(func(s *styles.Style) {
 		s.Gap.Zero()
 		s.CenterAll()
-		s.Background = ColorPurple
 	})
 
 	resultByCategoryId := a.controller.GetAnnualResult(year)
@@ -505,6 +504,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 						s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
 						s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 						s.Border.Width.SetAll(units.Dp(1))
+						s.Background = ColorPurple
 						s.CenterAll()
 					})
 
@@ -535,6 +535,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
 		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 		s.Border.Width.SetAll(units.Dp(1))
+		s.Background = ColorPurple
 		s.CenterAll()
 	})
 
@@ -550,6 +551,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
 		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 		s.Border.Width.SetAll(units.Dp(1))
+		s.Background = ColorPurple
 		s.CenterAll()
 	})
 
