@@ -67,6 +67,7 @@ func (u *SumUpdater) start() {
 				}
 
 				consumptionField.SetText(FormatInt(consumption, addMinus))
+				consumptionField.Update()
 
 				for id, balance := range balanceById {
 					balanceField, ok := u.balanceFields[id]
@@ -76,6 +77,7 @@ func (u *SumUpdater) start() {
 						continue
 					}
 					balanceField.SetText(FormatInt(balance))
+					balanceField.Update()
 					u.balanceFields[id] = balanceField
 				}
 
