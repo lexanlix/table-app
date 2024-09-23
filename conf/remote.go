@@ -20,7 +20,8 @@ type Setting struct {
 }
 
 type Gui struct {
-	CellSizeDp float32
+	CellSizeDpX float32
+	CellSizeDpY float32
 }
 
 type Order map[string]int

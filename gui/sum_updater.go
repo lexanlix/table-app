@@ -13,8 +13,8 @@ import (
 
 type SumUpdater struct {
 	logger            log.Logger
-	consumptionFields map[string]*core.TextField
-	balanceFields     map[string]*core.TextField
+	consumptionFields map[string]*core.Text
+	balanceFields     map[string]*core.Text
 	controller        TableController
 
 	lock       sync.Mutex
@@ -25,8 +25,8 @@ type SumUpdater struct {
 func NewSumUpdater(logger log.Logger, controller TableController) *SumUpdater {
 	return &SumUpdater{
 		logger:            logger,
-		consumptionFields: make(map[string]*core.TextField),
-		balanceFields:     make(map[string]*core.TextField),
+		consumptionFields: make(map[string]*core.Text),
+		balanceFields:     make(map[string]*core.Text),
 		controller:        controller,
 		lock:              sync.Mutex{},
 		wgGroup:           sync.WaitGroup{},
@@ -91,7 +91,7 @@ func (u *SumUpdater) Close() {
 	close(u.updateChan)
 }
 
-func (u *SumUpdater) AddConsumptionField(month, year int, tField *core.TextField) {
+func (u *SumUpdater) AddConsumptionText(month, year int, tField *core.Text) {
 	u.lock.Lock()
 
 	sum := u.controller.GetConsumptionSum(month, year)
@@ -103,7 +103,7 @@ func (u *SumUpdater) AddConsumptionField(month, year int, tField *core.TextField
 	u.lock.Unlock()
 }
 
-func (u *SumUpdater) AddBalanceField(month, year int, tField *core.TextField) {
+func (u *SumUpdater) AddBalanceText(month, year int, tField *core.Text) {
 	u.lock.Lock()
 
 	var sum int

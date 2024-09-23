@@ -106,11 +106,20 @@ func (a *App) DrawYearTable(year int, frame *core.Frame, data *domain.GuiTableDa
 		s.Columns = 2
 		s.Border.Width.Set(units.Dp(1))
 		s.Border.Radius.Zero()
+		s.Gap.Zero()
 		s.CenterAll()
 	})
 
 	yearFrame := a.withFrame(tableFrame)
 	yearFrame.SetName("yearFrame")
+	yearFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(83)
+		s.Border.Width.Right.Dp(1)
+		s.Border.Width.Bottom.Dp(2)
+		s.CenterAll()
+		s.Gap.Zero()
+	})
 	_ = a.withText(yearFrame, strconv.Itoa(year)+" год")
 
 	_ = a.getTableHead(tableFrame, data)
@@ -124,6 +133,9 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 	headFrame.SetName("headFrame")
 	headFrame.Styler(func(s *styles.Style) {
 		s.CenterAll()
+		s.Border.Width.Left.Dp(1)
+		s.Border.Width.Bottom.Dp(1)
+		s.Gap.Zero()
 	})
 
 	// проходим по главным категориям
@@ -134,35 +146,54 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 		mainFrame.SetName(mainCategName + "_frame")
 		mainFrame.Styler(func(s *styles.Style) {
 			s.Direction = styles.Column
-			s.Border.Width.Set(units.Dp(1))
-			s.Border.Radius.Zero()
 			s.CenterAll()
+			if i != len(data.Categories)-1 {
+				s.Border.Width.Right.Dp(2)
+			}
+			s.Gap.Zero()
 		})
 
 		topFrame := a.withFrame(mainFrame)
 		topFrame.SetName(mainCategName + "_topFrame")
 		topFrame.Styler(func(s *styles.Style) {
-			s.CenterAll()
 			s.Min.Y.Dp(25)
+			s.Padding.Top.Dp(10)
+			s.Padding.Bottom.Dp(10)
+			s.CenterAll()
 		})
 		_ = a.withText(topFrame, mainCategName)
 
 		bottomFrame := a.withFrame(mainFrame)
 		bottomFrame.SetName(mainCategName + "_bottomFrame")
+		bottomFrame.Styler(func(s *styles.Style) {
+			s.Gap.Zero()
+		})
 
 		bottomFrame.Maker(func(p *tree.Plan) {
 			// проходим по категориям главной категории, добавляем ячейки
 			for j, category := range data.Categories[i] {
-				tree.AddAt(p, "cat_"+data.Categories[i][j].Name, func(w *core.TextField) {
-					w.Styler(func(s *styles.Style) {
-						s.Min.X.Dp(a.settings.Gui.CellSizeDp)
+				tree.AddAt(p, "cat_"+data.Categories[i][j].Name, func(frame *core.Frame) {
+					frame.Styler(func(s *styles.Style) {
+						s.Gap.Zero()
+						s.Max.X.Dp(a.settings.Gui.CellSizeDpX)
+						s.Max.Y.Dp(a.settings.Gui.CellSizeDpY)
+						s.Border.Width.SetAll(units.Dp(1))
+						s.CenterAll()
 					})
-					core.Bind(&data.Categories[i][j].Name, w.SetText(data.Categories[i][j].Name))
 
-					w.OnChange(func(e events.Event) {
+					tField := core.NewTextField(frame)
+					tField.Type = core.TextFieldOutlined
+					tField.Styler(func(s *styles.Style) {
+						s.Border.Radius.Zero()
+						s.Border.Width.Zero()
+						s.Border.Offset.Zero()
+					})
+					core.Bind(&data.Categories[i][j].Name, tField.SetText(data.Categories[i][j].Name))
+
+					tField.OnChange(func(e events.Event) {
 						oldCategory := category
 						newCategory := domain.Category{
-							Name:         w.Text(),
+							Name:         tField.Text(),
 							MainCategory: category.MainCategory,
 						}
 
@@ -182,20 +213,19 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 	consumptionFrame := a.withFrame(headFrame)
 	consumptionFrame.SetName("consumptionFrame")
 	consumptionFrame.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(a.settings.Gui.CellSizeDp)
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(81)
+		s.Border.Width.SetAll(units.Dp(1))
 		s.CenterAll()
 	})
 	a.withText(consumptionFrame, "Расход в месяц")
 
-	sep := core.NewSeparator(headFrame)
-	sep.Styler(func(s *styles.Style) {
-		s.Direction = styles.Column
-	})
-
 	balanceFrame := a.withFrame(headFrame)
 	balanceFrame.SetName("balanceFrame")
 	balanceFrame.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(a.settings.Gui.CellSizeDp)
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(81)
+		s.Border.Width.SetAll(units.Dp(1))
 		s.CenterAll()
 	})
 	a.withText(balanceFrame, "Остаток")
@@ -208,7 +238,9 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 	mainFrame.SetName("monthsFrame")
 	mainFrame.Styler(func(s *styles.Style) {
 		s.Direction = styles.Column
-		s.Min.X.Dp(120)
+		s.Border.Width.Right.Dp(1)
+		s.Border.Width.Top.Dp(1)
+		s.Gap.Zero()
 	})
 
 	var lastMonth time.Month
@@ -220,9 +252,19 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 	}
 
 	for month := 1; month <= int(lastMonth); month++ {
-		textFrame := a.withFrame(mainFrame)
-		textFrame.Styler(func(s *styles.Style) {
-			s.Min.X.Dp(120)
+		monthFrame := a.withFrame(mainFrame)
+		monthFrame.SetName(time.Month(month).String() + "_frame")
+		monthFrame.Styler(func(s *styles.Style) {
+			s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+			s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+			s.Gap.Zero()
+			s.Border.Offset.Top.Dp(1)
+			s.Border.Width.Bottom.Dp(1)
+			s.CenterAll()
+
+			if year == time.Now().Year() && month == int(lastMonth) {
+				s.Background = ColorYellow
+			}
 		})
 
 		monthName, ok := domain.RusMonths[month]
@@ -230,7 +272,7 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 			monthName = time.Month(month).String()
 		}
 
-		_ = a.withTextField(textFrame).SetText(monthName)
+		core.NewText(monthFrame).SetText(monthName)
 	}
 
 	return mainFrame
@@ -241,6 +283,10 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 	mainFrame.SetName("valuesFrame")
 	mainFrame.Styler(func(s *styles.Style) {
 		s.Direction = styles.Column
+		s.Border.Width.Left.Dp(1)
+		s.Border.Width.Top.Dp(1)
+		s.Border.Width.Right.Dp(0.5)
+		s.Gap.Zero()
 	})
 
 	var lastMonth time.Month
@@ -256,10 +302,27 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 	for month := 1; month <= int(lastMonth); month++ {
 		monthFrame := a.withFrame(mainFrame)
 		monthFrame.SetName(time.Month(month).String() + "_frame")
+		monthFrame.Styler(func(s *styles.Style) {
+			s.CenterAll()
+			s.Gap.Zero()
+		})
 
-		monthFrame.Maker(func(p *tree.Plan) {
-			for _, categories := range data.Categories {
-				for _, category := range categories {
+		for i, categories := range data.Categories {
+			mainCategFrame := core.NewFrame(monthFrame)
+			mainCategFrame.SetName(categories[0].MainCategory + "_frame")
+			mainCategFrame.Styler(func(s *styles.Style) {
+				s.Gap.Zero()
+				if i != len(data.Categories)-1 {
+					s.Border.Width.Right.Dp(1)
+					s.Background = ColorSoftGreen
+				} else {
+					s.Background = ColorSoftGrey
+				}
+				s.CenterAll()
+			})
+
+			mainCategFrame.Maker(func(p *tree.Plan) {
+				for _, category := range data.Categories[i] {
 					ctx := context.Background()
 					compositeId := category.MainCategory + category.Name + strconv.Itoa(month) + strconv.Itoa(year)
 
@@ -269,9 +332,22 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 						cellIsCreated = true
 					}
 
-					tree.AddAt(p, compositeId, func(tField *core.TextField) {
+					tree.AddAt(p, compositeId, func(frame *core.Frame) {
+						frame.Styler(func(s *styles.Style) {
+							s.Gap.Zero()
+							s.Max.X.Dp(a.settings.Gui.CellSizeDpX)
+							s.Max.Y.Dp(a.settings.Gui.CellSizeDpY)
+							s.Border.Width.SetAll(units.Dp(1))
+							s.CenterAll()
+						})
+
+						tField := core.NewTextField(frame)
+						tField.SetName(compositeId + "_tField")
+						tField.Type = core.TextFieldOutlined
 						tField.Styler(func(s *styles.Style) {
-							s.Min.X.Dp(a.settings.Gui.CellSizeDp)
+							s.Border.Radius.Zero()
+							s.Border.Width.Zero()
+							s.Border.Offset.Zero()
 						})
 						a.updater.AddTextField(compositeId, tField)
 
@@ -340,24 +416,34 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 						tField.SetText(FormatInt(cell.Value))
 					})
 				}
-			}
-
-			tree.AddAt(p, "consumption_tField", func(tField *core.TextField) {
-				tField.Styler(func(s *styles.Style) {
-					s.Min.X.Dp(a.settings.Gui.CellSizeDp)
-				})
-
-				a.sumUpdater.AddConsumptionField(month, year, tField)
 			})
+		}
 
-			tree.AddAt(p, "balance_tField", func(tField *core.TextField) {
-				tField.Styler(func(s *styles.Style) {
-					s.Min.X.Dp(a.settings.Gui.CellSizeDp)
-				})
+		consFrame := core.NewFrame(monthFrame)
+		consFrame.SetName("consumptionFrame")
 
-				a.sumUpdater.AddBalanceField(month, year, tField)
-			})
+		consFrame.Styler(func(s *styles.Style) {
+			s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+			s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+			s.Border.Width.SetAll(units.Dp(1))
+			s.CenterAll()
 		})
+
+		consText := core.NewText(consFrame)
+		a.sumUpdater.AddConsumptionText(month, year, consText)
+
+		balanceFrame := core.NewFrame(monthFrame)
+		balanceFrame.SetName("balanceFrame")
+
+		balanceFrame.Styler(func(s *styles.Style) {
+			s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+			s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+			s.Border.Width.SetAll(units.Dp(1))
+			s.CenterAll()
+		})
+
+		balanceText := core.NewText(balanceFrame)
+		a.sumUpdater.AddBalanceText(month, year, balanceText)
 	}
 
 	return mainFrame

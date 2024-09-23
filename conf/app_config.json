@@ -12,7 +12,8 @@
     "startMonth": 1,
     "startMoney": 100000,
     "gui": {
-      "cellSizeDp": 100
+      "cellSizeDpX": 110,
+      "cellSizeDpY": 35
     },
     "mainCategoryOrder": {
       "Доходы": 0,
