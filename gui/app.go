@@ -10,6 +10,7 @@ import (
 	"table-app/domain"
 	"table-app/entity"
 	"table-app/internal/log"
+	"table-app/utils"
 
 	"cogentcore.org/core/core"
 	"cogentcore.org/core/events"
@@ -275,6 +276,28 @@ func (a *App) getMonthsColumn(year int, frame *core.Frame) *core.Frame {
 		core.NewText(monthFrame).SetText(monthName)
 	}
 
+	if year == time.Now().Year() {
+		return mainFrame
+	}
+
+	// строка итогов года
+	resultFrame := a.withFrame(mainFrame)
+	resultFrame.SetName("resultFrame")
+	resultFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+		s.Gap.Zero()
+		s.Border.Offset.Top.Dp(1)
+		s.Border.Width.Bottom.Dp(1)
+		s.CenterAll()
+		s.Background = ColorPurple
+	})
+
+	resultText := core.NewText(resultFrame).SetText(strconv.Itoa(year))
+	resultText.Styler(func(s *styles.Style) {
+		s.Font.Weight = styles.WeightBold
+	})
+
 	return mainFrame
 }
 
@@ -445,6 +468,95 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 		balanceText := core.NewText(balanceFrame)
 		a.sumUpdater.AddBalanceText(month, year, balanceText)
 	}
+
+	if year == time.Now().Year() {
+		return mainFrame
+	}
+
+	// строка итогов года
+	resultFrame := a.withFrame(mainFrame)
+	resultFrame.SetName("resultFrame")
+	resultFrame.Styler(func(s *styles.Style) {
+		s.Gap.Zero()
+		s.CenterAll()
+		s.Background = ColorPurple
+	})
+
+	resultByCategoryId := a.controller.GetAnnualResult(year)
+
+	for i, categories := range data.Categories {
+		mainCategFrame := core.NewFrame(resultFrame)
+		mainCategFrame.SetName(categories[0].MainCategory + "_resultFrame")
+		mainCategFrame.Styler(func(s *styles.Style) {
+			s.Gap.Zero()
+			if i != len(data.Categories)-1 {
+				s.Border.Width.Right.Dp(1)
+			}
+			s.CenterAll()
+		})
+
+		mainCategFrame.Maker(func(p *tree.Plan) {
+			for _, category := range data.Categories[i] {
+				compositeCategory := utils.GetCompositeCategory(category.MainCategory, category.Name)
+
+				tree.AddAt(p, compositeCategory, func(frame *core.Frame) {
+					frame.Styler(func(s *styles.Style) {
+						s.Gap.Zero()
+						s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+						s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+						s.Border.Width.SetAll(units.Dp(1))
+						s.CenterAll()
+					})
+
+					textResult := core.NewText(frame)
+					textResult.SetName(compositeCategory + "_text")
+					textResult.Styler(func(s *styles.Style) {
+						s.Font.Weight = styles.WeightBold
+					})
+
+					var result int
+					var ok bool
+
+					result, ok = resultByCategoryId[compositeCategory]
+					if !ok {
+						result = 0
+					}
+
+					textResult.SetText(FormatInt(result))
+				})
+			}
+		})
+	}
+
+	consResFrame := core.NewFrame(resultFrame)
+	consResFrame.SetName("consumptionResFrame")
+
+	consResFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+		s.Border.Width.SetAll(units.Dp(1))
+		s.CenterAll()
+	})
+
+	consumptionRes := resultByCategoryId[domain.ColumnConsumption]
+	core.NewText(consResFrame).SetText(FormatInt(consumptionRes, addMinus)).Styler(func(s *styles.Style) {
+		s.Font.Weight = styles.WeightBold
+	})
+
+	balanceResFrame := core.NewFrame(resultFrame)
+	balanceResFrame.SetName("balanceResFrame")
+
+	balanceResFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+		s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
+		s.Border.Width.SetAll(units.Dp(1))
+		s.CenterAll()
+	})
+
+	balanceRes := resultByCategoryId[domain.ColumnBalance]
+	core.NewText(balanceResFrame).SetText(FormatInt(balanceRes)).Styler(func(s *styles.Style) {
+		s.Font.Weight = styles.WeightBold
+	})
 
 	return mainFrame
 }

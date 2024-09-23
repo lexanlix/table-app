@@ -26,6 +26,7 @@ type CalculationService interface {
 	ConsumptionSum(month, year int) int
 	UpsertBalance(month, year int) (map[string]int, error)
 	BalanceSum(month, year int) (int, error)
+	GetAnnualResult(year int) map[string]int
 }
 
 type Table struct {
@@ -132,4 +133,10 @@ func (c Table) UpsertBalance(month, year int) (map[string]int, error) {
 	}
 
 	return res, nil
+}
+
+// GetAnnualResult
+// Годовой итог
+func (c Table) GetAnnualResult(year int) map[string]int {
+	return c.calculationService.GetAnnualResult(year)
 }

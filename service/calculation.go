@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"table-app/conf"
+	"table-app/domain"
 	"table-app/repository"
 	"table-app/utils"
 
@@ -198,4 +199,53 @@ func (s *Calculation) getPreviousBalance(month, year int) (int, error) {
 	}
 
 	return balance, nil
+}
+
+func (s *Calculation) GetAnnualResult(year int) map[string]int {
+	res := make(map[string]int)
+
+	s.categoryCache.Lock()
+	categories := s.categoryCache.GetCategoryArray()
+	s.categoryCache.Unlock()
+
+	s.cellsCache.Lock()
+	valuesList := s.cellsCache.GetList()
+	s.cellsCache.Unlock()
+
+	for _, mainCategoryArr := range categories {
+		for _, category := range mainCategoryArr {
+			categoryResult := 0
+
+			for month := 1; month <= int(time.December); month++ {
+				compositeId := utils.GetCompositeId(category.MainCategory, category.Name, month, year)
+				cell, ok := valuesList[compositeId]
+				if ok {
+					categoryResult += cell.Value
+				}
+			}
+
+			compositeCategory := utils.GetCompositeCategory(category.MainCategory, category.Name)
+			res[compositeCategory] = categoryResult
+		}
+	}
+
+	consumptionResult := 0
+	for month := 1; month <= int(time.December); month++ {
+		consumption, ok := s.cache.GetConsumption(month, year)
+		if ok {
+			consumptionResult += consumption
+		}
+	}
+
+	var balanceResult int
+	var ok bool
+	balanceResult, ok = s.cache.GetBalance(int(time.December), year)
+	if !ok {
+		balanceResult = 0
+	}
+
+	res[domain.ColumnConsumption] = consumptionResult
+	res[domain.ColumnBalance] = balanceResult
+
+	return res
 }

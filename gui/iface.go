@@ -16,4 +16,6 @@ type TableController interface {
 	GetConsumptionSum(month, year int) int
 	GetBalanceSum(month, year int) (int, error)
 	UpsertBalance(month, year int) (map[string]int, error)
+
+	GetAnnualResult(year int) map[string]int
 }
