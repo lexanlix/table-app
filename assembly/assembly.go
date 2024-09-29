@@ -14,9 +14,10 @@ import (
 )
 
 type Assembly struct {
-	logger       *log.Adapter
-	db           *db.Client
-	shutdownFunc func()
+	logger        *log.Adapter
+	db            *db.Client
+	shutdownFunc  func()
+	isFileStorage bool
 }
 
 func New(app *app.Application) *Assembly {
@@ -24,9 +25,10 @@ func New(app *app.Application) *Assembly {
 	dbCli := db.NewClient(logger)
 
 	return &Assembly{
-		logger:       logger,
-		db:           dbCli,
-		shutdownFunc: app.Shutdown,
+		logger:        logger,
+		db:            dbCli,
+		shutdownFunc:  app.Shutdown,
+		isFileStorage: false,
 	}
 }
 
@@ -43,6 +45,9 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) (*gui
 		if err != nil {
 			return nil, errors.WithMessage(err, "upgrade db client")
 		}
+	} else {
+		// если используется файловое хранилище данных
+		a.isFileStorage = true
 	}
 
 	locator := NewLocator(a.db, a.logger)
@@ -65,12 +70,17 @@ func (a *Assembly) Runners() []app.Runner {
 }
 
 func (a *Assembly) Closers() []app.Closer {
-	return []app.Closer{
+	closers := []app.Closer{
 		app.CloserFunc(func() error {
 			return nil
 		}),
-		a.db,
 	}
+
+	if !a.isFileStorage {
+		closers = append(closers, a.db)
+	}
+
+	return closers
 }
 
 func (a *Assembly) UpgradeConfig(newCfg []byte, config *conf.Remote) error {
