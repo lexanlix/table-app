@@ -45,6 +45,10 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 		return nil, errors.WithMessage(err, "get categories")
 	}
 
+	if len(categoryList) == 0 {
+		categoryList = domain.GetStartingCategories(cfg.Settings.MainCategoryOrder)
+	}
+
 	cellsCache := repository.NewCellsCache()
 	cellsCache.InitCache(cellsData)
 	cellsList := cellsCache.GetList()
