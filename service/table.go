@@ -17,18 +17,20 @@ type TableRepository interface {
 }
 
 type Table struct {
-	logger log.Logger
-	cache  *repository.CellsCache
-	repo   TableRepository
-	cfg    conf.Setting
+	logger        log.Logger
+	cache         *repository.CellsCache
+	repo          TableRepository
+	cfg           conf.Setting
+	isFileStorage bool
 }
 
-func NewTable(logger log.Logger, cache *repository.CellsCache, repo TableRepository, cfg conf.Setting) *Table {
+func NewTable(logger log.Logger, cache *repository.CellsCache, repo TableRepository, cfg conf.Setting, isFileStorage bool) *Table {
 	return &Table{
-		logger: logger,
-		cache:  cache,
-		repo:   repo,
-		cfg:    cfg,
+		logger:        logger,
+		cache:         cache,
+		repo:          repo,
+		cfg:           cfg,
+		isFileStorage: isFileStorage,
 	}
 }
 
@@ -46,6 +48,15 @@ func (s *Table) SaveAll(ctx context.Context) error {
 	defer s.cache.Unlock()
 
 	cells := s.cache.ReadAll()
+
+	if s.isFileStorage {
+		err := s.repo.UpsertAll(ctx, cells)
+		if err != nil {
+			return errors.WithMessage(err, "upsert cells")
+		}
+
+		return nil
+	}
 
 	updatedCells := make([]domain.Cell, 0)
 	for _, cell := range cells {

@@ -6,7 +6,7 @@ import (
 )
 
 type Category struct {
-	Id           int
+	Id           string
 	Name         string
 	MainCategory string
 	Priority     int

@@ -7,8 +7,18 @@ import (
 
 type Remote struct {
 	LogLevel log.Level `schemaGen:"logLevel" schema:"Уровень логирования"`
-	Database db.StorageConfig
+	Storage  Storage
 	Settings Setting
+}
+
+type Storage struct {
+	Files    *Files
+	Database *db.StorageConfig
+}
+
+type Files struct {
+	TableFilePath    string
+	CategoryFilePath string
 }
 
 type Setting struct {

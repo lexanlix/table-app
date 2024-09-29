@@ -38,9 +38,11 @@ func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) (*gui
 		a.logger.Fatal(ctx, errors.WithMessage(err, "upgrade remote config"))
 	}
 
-	err = a.db.Upgrade(ctx, newCfg.Database)
-	if err != nil {
-		return nil, errors.WithMessage(err, "upgrade db client")
+	if newCfg.Storage.Database != nil {
+		err = a.db.Upgrade(ctx, *newCfg.Storage.Database)
+		if err != nil {
+			return nil, errors.WithMessage(err, "upgrade db client")
+		}
 	}
 
 	locator := NewLocator(a.db, a.logger)

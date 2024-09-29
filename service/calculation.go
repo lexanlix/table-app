@@ -152,7 +152,7 @@ func (s *Calculation) UpsertBalance(currentMonth, currentYear int) (map[string]i
 
 			consumption, ok := s.cache.GetConsumption(int(month), year)
 			if !ok {
-				return nil, errors.Errorf("not found month consumption, %s %d", time.Month(month).String(), year)
+				return nil, errors.Errorf("not found month consumption, %s %d", month.String(), year)
 			}
 
 			prevBalance, err := s.getPreviousBalance(int(month), year)

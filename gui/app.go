@@ -35,6 +35,7 @@ type App struct {
 
 func NewApp(logger log.Logger, cfg Config, controller TableController, settings conf.Setting, shutdownFunc func()) *App {
 	body := core.NewBody(cfg.Title)
+
 	body.Styler(func(s *styles.Style) {
 		s.Min.Set(units.Dp(cfg.SizeDp))
 		s.Pos.Y.Dp(0)
@@ -320,8 +321,6 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 		lastMonth = time.Now().Month()
 	}
 
-	consumptionArr := make([]*int, 0)
-
 	for month := 1; month <= int(lastMonth); month++ {
 		monthFrame := a.withFrame(mainFrame)
 		monthFrame.SetName(time.Month(month).String() + "_frame")
@@ -435,7 +434,6 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 							return
 						}
 
-						consumptionArr = append(consumptionArr)
 						tField.SetText(FormatInt(cell.Value))
 					})
 				}
