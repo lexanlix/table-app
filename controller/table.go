@@ -13,6 +13,7 @@ type TableService interface {
 	Upsert(cell domain.Cell) error
 	UpdateCategoryName(oldCateg, newCateg domain.Category)
 	SaveAll(ctx context.Context) error
+	GetCellById(compositeId string) (domain.Cell, bool)
 }
 
 type CategoryService interface {
@@ -99,6 +100,12 @@ func (c Table) UpdateCategoryName(ctx context.Context, old, new domain.Category)
 
 	c.service.UpdateCategoryName(old, new)
 	return nil
+}
+
+// GetCellById
+// Получить ячейку по compositeId
+func (c Table) GetCellById(compositeId string) (domain.Cell, bool) {
+	return c.service.GetCellById(compositeId)
 }
 
 // CategoryIsExist

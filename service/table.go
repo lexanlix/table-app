@@ -81,3 +81,10 @@ func (s *Table) UpdateCategoryName(oldCateg, newCateg domain.Category) {
 
 	s.cache.UpdateCategoryName(oldCateg, newCateg, s.cfg.StartMonth, s.cfg.StartYear)
 }
+
+func (s *Table) GetCellById(compositeId string) (domain.Cell, bool) {
+	s.cache.Lock()
+	defer s.cache.Unlock()
+
+	return s.cache.Get(compositeId)
+}

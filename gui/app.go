@@ -194,7 +194,6 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 					})
 					core.Bind(&data.Categories[i][j].Name, tField.SetText(data.Categories[i][j].Name))
 
-					// todo добавить обновление при изменении названия категории
 					if nameLen > 15 {
 						tField.SetTooltip(data.Categories[i][j].Name)
 					}
@@ -356,7 +355,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 					compositeId := category.MainCategory + category.Name + strconv.Itoa(month) + strconv.Itoa(year)
 
 					cellIsCreated := false
-					cell, ok := data.ValuesList[compositeId]
+					cell, ok := a.controller.GetCellById(compositeId)
 					if ok {
 						cellIsCreated = true
 					}
@@ -383,6 +382,11 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 						a.updater.AddTextField(compositeId, tField)
 
 						tField.OnDoubleClick(func(e events.Event) {
+							// проверка через кеш
+							cell, ok = a.controller.GetCellById(compositeId)
+							if ok {
+								cellIsCreated = true
+							}
 							if !cellIsCreated {
 								cell = domain.Cell{
 									MainCategory: category.MainCategory,
@@ -434,7 +438,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 						})
 
 						if !cellIsCreated {
-							tField.SetText("0")
+							tField.SetText("")
 							return
 						}
 
