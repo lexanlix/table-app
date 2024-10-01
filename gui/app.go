@@ -174,10 +174,12 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 		bottomFrame.Maker(func(p *tree.Plan) {
 			// проходим по категориям главной категории, добавляем ячейки
 			for j, category := range data.Categories[i] {
+				nameLen := len([]rune(data.Categories[i][j].Name))
+
 				tree.AddAt(p, "cat_"+data.Categories[i][j].Name, func(frame *core.Frame) {
 					frame.Styler(func(s *styles.Style) {
 						s.Gap.Zero()
-						s.Max.X.Dp(a.settings.Gui.CellSizeDpX)
+						s.Max.X.Dp(a.getCellSizeDpX(nameLen))
 						s.Max.Y.Dp(a.settings.Gui.CellSizeDpY)
 						s.Border.Width.SetAll(units.Dp(1))
 						s.CenterAll()
@@ -191,6 +193,11 @@ func (a *App) getTableHead(frame *core.Frame, data *domain.GuiTableData) *core.F
 						s.Border.Offset.Zero()
 					})
 					core.Bind(&data.Categories[i][j].Name, tField.SetText(data.Categories[i][j].Name))
+
+					// todo добавить обновление при изменении названия категории
+					if nameLen > 15 {
+						tField.SetTooltip(data.Categories[i][j].Name)
+					}
 
 					tField.OnChange(func(e events.Event) {
 						oldCategory := category
@@ -344,7 +351,7 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 			})
 
 			mainCategFrame.Maker(func(p *tree.Plan) {
-				for _, category := range data.Categories[i] {
+				for j, category := range data.Categories[i] {
 					ctx := context.Background()
 					compositeId := category.MainCategory + category.Name + strconv.Itoa(month) + strconv.Itoa(year)
 
@@ -355,9 +362,11 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 					}
 
 					tree.AddAt(p, compositeId, func(frame *core.Frame) {
+						nameLen := len([]rune(data.Categories[i][j].Name))
+
 						frame.Styler(func(s *styles.Style) {
 							s.Gap.Zero()
-							s.Max.X.Dp(a.settings.Gui.CellSizeDpX)
+							s.Max.X.Dp(a.getCellSizeDpX(nameLen))
 							s.Max.Y.Dp(a.settings.Gui.CellSizeDpY)
 							s.Border.Width.SetAll(units.Dp(1))
 							s.CenterAll()
@@ -493,13 +502,15 @@ func (a *App) getValuesFrame(year int, frame *core.Frame, data *domain.GuiTableD
 		})
 
 		mainCategFrame.Maker(func(p *tree.Plan) {
-			for _, category := range data.Categories[i] {
+			for j, category := range data.Categories[i] {
 				compositeCategory := utils.GetCompositeCategory(category.MainCategory, category.Name)
 
 				tree.AddAt(p, compositeCategory, func(frame *core.Frame) {
+					nameLen := len([]rune(data.Categories[i][j].Name))
+
 					frame.Styler(func(s *styles.Style) {
 						s.Gap.Zero()
-						s.Min.X.Dp(a.settings.Gui.CellSizeDpX)
+						s.Min.X.Dp(a.getCellSizeDpX(nameLen))
 						s.Min.Y.Dp(a.settings.Gui.CellSizeDpY)
 						s.Border.Width.SetAll(units.Dp(1))
 						s.Background = ColorPurple
@@ -599,4 +610,16 @@ func (a *App) createToolbar(categories [][]domain.Category) {
 	})
 
 	a.toolBar = tbar
+}
+
+func (a *App) getCellSizeDpX(nameLen int) float32 {
+	if nameLen < 8 {
+		return 80
+	}
+
+	if nameLen > 12 {
+		return a.settings.Gui.CellSizeDpX
+	}
+
+	return float32(nameLen * 11)
 }
