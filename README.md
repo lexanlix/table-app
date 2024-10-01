@@ -1,6 +1,7 @@
 # Приложение учета финансов
 Version: 1.0.0
 
+![preview](https://github.com/user-attachments/assets/e9e15197-fcd0-4f6f-a194-e2bc48b1f357)
 
 ### Инструменты
   - Go (1.23)
