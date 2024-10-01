@@ -13,6 +13,7 @@ type TableService interface {
 	Upsert(cell domain.Cell) error
 	UpdateCategoryName(oldCateg, newCateg domain.Category)
 	SaveAll(ctx context.Context) error
+	GetCellById(compositeId string) (domain.Cell, bool)
 }
 
 type CategoryService interface {
@@ -22,17 +23,26 @@ type CategoryService interface {
 	SaveAll(ctx context.Context) error
 }
 
-type Table struct {
-	logger          log.Logger
-	service         TableService
-	categoryService CategoryService
+type CalculationService interface {
+	ConsumptionSum(month, year int) int
+	UpsertBalance(month, year int) (map[string]int, error)
+	BalanceSum(month, year int) (int, error)
+	GetAnnualResult(year int) map[string]int
 }
 
-func NewTable(logger log.Logger, service TableService, categoryService CategoryService) Table {
+type Table struct {
+	logger             log.Logger
+	service            TableService
+	categoryService    CategoryService
+	calculationService CalculationService
+}
+
+func NewTable(logger log.Logger, service TableService, categoryService CategoryService, calculationService CalculationService) Table {
 	return Table{
-		logger:          logger,
-		service:         service,
-		categoryService: categoryService,
+		logger:             logger,
+		service:            service,
+		categoryService:    categoryService,
+		calculationService: calculationService,
 	}
 }
 
@@ -92,8 +102,48 @@ func (c Table) UpdateCategoryName(ctx context.Context, old, new domain.Category)
 	return nil
 }
 
+// GetCellById
+// Получить ячейку по compositeId
+func (c Table) GetCellById(compositeId string) (domain.Cell, bool) {
+	return c.service.GetCellById(compositeId)
+}
+
 // CategoryIsExist
 // Поиск категории в кеше
 func (c Table) CategoryIsExist(ctx context.Context, category domain.Category) bool {
 	return c.categoryService.CategoryIsExist(category)
+}
+
+// GetConsumptionSum
+// Получение суммы расходов по конкретному месяцу и году
+func (c Table) GetConsumptionSum(month, year int) int {
+	return c.calculationService.ConsumptionSum(month, year)
+}
+
+// GetBalanceSum
+// Получение суммы остатка по конкретному месяцу и году
+func (c Table) GetBalanceSum(month, year int) (int, error) {
+	res, err := c.calculationService.BalanceSum(month, year)
+	if err != nil {
+		return 0, errors.WithMessage(err, "get balance sum")
+	}
+
+	return res, nil
+}
+
+// UpsertBalance
+// Обновление остатка
+func (c Table) UpsertBalance(month, year int) (map[string]int, error) {
+	res, err := c.calculationService.UpsertBalance(month, year)
+	if err != nil {
+		return nil, errors.WithMessage(err, "upsert balance")
+	}
+
+	return res, nil
+}
+
+// GetAnnualResult
+// Годовой итог
+func (c Table) GetAnnualResult(year int) map[string]int {
+	return c.calculationService.GetAnnualResult(year)
 }

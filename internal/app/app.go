@@ -67,12 +67,6 @@ func (a *Application) Run() error {
 
 	a.Gui.Run()
 	return nil
-	//select {
-	//case err := <-errChan:
-	//	return err
-	//case <-a.ctx.Done():
-	//	return nil
-	//}
 }
 
 func (a *Application) Shutdown() {

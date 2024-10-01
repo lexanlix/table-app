@@ -102,7 +102,6 @@ func (r *CellsCache) UpdateCategoryName(oldCategory, newCategory domain.Category
 			delete(r.cache, compositeId)
 		}
 	}
-
 }
 
 func (r *CellsCache) Lock() {

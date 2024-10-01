@@ -7,6 +7,7 @@ import (
 	"table-app/conf"
 	"table-app/domain"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -75,6 +76,7 @@ func (r *CategoryCache) Insert(newCategory domain.Category) error {
 	// порядковый номер в массиве категорий данной основной категории + 1
 	priority := len(r.orderArr[mainPriority]) + 1
 	newCategory.Priority = priority
+	newCategory.Id = uuid.New().String()
 
 	r.orderArr[mainPriority] = append(r.orderArr[mainPriority], newCategory)
 	r.categoryIndexByName[newCategory.MainCategory+newCategory.Name] = []int{mainPriority, priority}

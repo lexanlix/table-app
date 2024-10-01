@@ -7,7 +7,7 @@ type Config struct {
 
 func NewAppConfig() Config {
 	return Config{
-		Title:  "Application",
+		Title:  "Таблица финансов",
 		SizeDp: 1600,
 	}
 }

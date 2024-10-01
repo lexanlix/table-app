@@ -21,8 +21,8 @@ func (t GuiTableData) GetConsumptionSum(month, year int) int {
 			continue
 		}
 		for _, categ := range mainCategory {
-			composteId := categ.MainCategory + categ.Name + strconv.Itoa(month) + strconv.Itoa(year)
-			cell, ok := t.ValuesList[composteId]
+			compositeId := categ.MainCategory + categ.Name + strconv.Itoa(month) + strconv.Itoa(year)
+			cell, ok := t.ValuesList[compositeId]
 			if ok {
 				res += cell.Value
 			}

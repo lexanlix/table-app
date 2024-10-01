@@ -32,8 +32,8 @@ func NewLocator(db DB, logger log.Logger) Locator {
 }
 
 func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func()) (*gui.App, error) {
-	tableRepo := repository.NewTable(l.db)
-	categoryRepo := repository.NewCategory(l.db)
+	tableRepo := repository.NewTable(l.db, cfg.Storage)
+	categoryRepo := repository.NewCategory(l.db, cfg.Storage)
 
 	cellsData, err := tableRepo.GetAll(ctx)
 	if err != nil {
@@ -45,22 +45,40 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 		return nil, errors.WithMessage(err, "get categories")
 	}
 
+	if len(categoryList) == 0 {
+		categoryList = domain.GetStartingCategories(cfg.Settings.MainCategoryOrder)
+	}
+
 	cellsCache := repository.NewCellsCache()
 	cellsCache.InitCache(cellsData)
+	cellsList := cellsCache.GetList()
 
 	categoryCache := repository.NewCategoryCache(cfg.Settings.MainCategoryOrder)
 	categoryCache.InitCache(categoryList)
+	categoryArray := categoryCache.GetCategoryArray()
 
-	tableService := service.NewTable(l.logger, cellsCache, tableRepo, cfg.Settings)
+	calculationCache := repository.NewCalculationCache(cfg.Settings)
+	err = calculationCache.InitCache(cellsList, categoryArray)
+	if err != nil {
+		return nil, errors.WithMessage(err, "init calculation cache")
+	}
+
+	isFileStorage := false
+	if cfg.Storage.Files != nil {
+		isFileStorage = true
+	}
+
+	tableService := service.NewTable(l.logger, cellsCache, tableRepo, cfg.Settings, isFileStorage)
 	categoryService := service.NewCategory(l.logger, categoryCache, categoryRepo)
+	calculationService := service.NewCalculation(calculationCache, cellsCache, categoryCache, cfg.Settings)
 
-	tableCtrl := controller.NewTable(l.logger, tableService, categoryService)
+	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService)
 
 	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, cfg.Settings, shutdownFunc)
 
 	guiApp.Upgrade(&domain.GuiTableData{
-		Categories:        categoryCache.GetCategoryArray(),
-		ValuesList:        cellsCache.GetList(),
+		Categories:        categoryArray,
+		ValuesList:        cellsList,
 		MainCategoryOrder: cfg.Settings.MainCategoryOrder,
 	})
 
