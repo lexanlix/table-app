@@ -1,4 +1,4 @@
-package gui
+package updaters
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"table-app/domain"
+	"table-app/gui/styles/format"
 	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
@@ -30,6 +31,10 @@ func NewUpdater(logger log.Logger) *Updater {
 	}
 }
 
+func (u *Updater) GetUpdateChan() chan domain.Cell {
+	return u.updateChan
+}
+
 func (u *Updater) Start() {
 	go u.start()
 }
@@ -52,7 +57,7 @@ func (u *Updater) start() {
 					continue
 				}
 
-				tField.SetText(FormatInt(cell.Value))
+				tField.SetText(format.FormatInt(cell.Value))
 				u.guiCells[compositeId] = tField
 				u.lock.Unlock()
 			}

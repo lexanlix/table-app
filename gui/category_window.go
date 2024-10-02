@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"table-app/domain"
+	"table-app/gui/iface"
 	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
@@ -17,12 +18,12 @@ type CategoryWindow struct {
 	appBody *core.Body
 
 	catDialog      *core.Body
-	controller     TableController
+	controller     iface.TableController
 	mainCategories []string
 	category       domain.Category
 }
 
-func NewCategoryWindow(logger log.Logger, appBody *core.Body, controller TableController,
+func NewCategoryWindow(logger log.Logger, appBody *core.Body, controller iface.TableController,
 	categories [][]domain.Category) *CategoryWindow {
 	catBody := core.NewBody("NewCategory").SetTitle("Добавление категории")
 	catBody.Styler(func(s *styles.Style) {

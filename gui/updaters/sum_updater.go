@@ -1,10 +1,12 @@
-package gui
+package updaters
 
 import (
 	"context"
 	"sync"
 
 	"table-app/entity"
+	"table-app/gui/iface"
+	"table-app/gui/styles/format"
 	"table-app/internal/log"
 	"table-app/utils"
 
@@ -15,14 +17,14 @@ type SumUpdater struct {
 	logger            log.Logger
 	consumptionFields map[string]*core.Text
 	balanceFields     map[string]*core.Text
-	controller        TableController
+	controller        iface.TableController
 
 	lock       sync.Mutex
 	wgGroup    sync.WaitGroup
 	updateChan chan entity.MonthYear
 }
 
-func NewSumUpdater(logger log.Logger, controller TableController) *SumUpdater {
+func NewSumUpdater(logger log.Logger, controller iface.TableController) *SumUpdater {
 	return &SumUpdater{
 		logger:            logger,
 		consumptionFields: make(map[string]*core.Text),
@@ -32,6 +34,15 @@ func NewSumUpdater(logger log.Logger, controller TableController) *SumUpdater {
 		wgGroup:           sync.WaitGroup{},
 		updateChan:        make(chan entity.MonthYear),
 	}
+}
+
+func (u *SumUpdater) GetUpdateChan() chan entity.MonthYear {
+	return u.updateChan
+}
+
+func (u *SumUpdater) SendToChannel(obj entity.MonthYear) {
+	u.updateChan <- obj
+	return
 }
 
 func (u *SumUpdater) Start() {
@@ -66,7 +77,7 @@ func (u *SumUpdater) start() {
 					continue
 				}
 
-				consumptionField.SetText(FormatInt(consumption, addMinus))
+				consumptionField.SetText(format.FormatInt(consumption, format.AddMinus))
 				consumptionField.Update()
 
 				for id, balance := range balanceById {
@@ -76,7 +87,7 @@ func (u *SumUpdater) start() {
 							log.String("compositeDate", compositeDate))
 						continue
 					}
-					balanceField.SetText(FormatInt(balance))
+					balanceField.SetText(format.FormatInt(balance))
 					balanceField.Update()
 					u.balanceFields[id] = balanceField
 				}
@@ -97,7 +108,7 @@ func (u *SumUpdater) AddConsumptionText(month, year int, tField *core.Text) {
 	u.lock.Lock()
 
 	sum := u.controller.GetConsumptionSum(month, year)
-	tField.SetText(FormatInt(sum, addMinus))
+	tField.SetText(format.FormatInt(sum, format.AddMinus))
 
 	compositeDate := utils.GetCompositeDate(month, year)
 	u.consumptionFields[compositeDate] = tField
@@ -117,7 +128,7 @@ func (u *SumUpdater) AddBalanceText(month, year int, tField *core.Text) {
 		sum = 0
 	}
 
-	tField.SetText(FormatInt(sum))
+	tField.SetText(format.FormatInt(sum))
 
 	compositeDate := utils.GetCompositeDate(month, year)
 	u.balanceFields[compositeDate] = tField

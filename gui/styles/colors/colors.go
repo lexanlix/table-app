@@ -1,4 +1,4 @@
-package gui
+package colors
 
 import "cogentcore.org/core/colors"
 

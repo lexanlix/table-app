@@ -1,4 +1,4 @@
-package gui
+package table
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 
 	"table-app/domain"
 	"table-app/entity"
+	"table-app/gui/iface"
+	"table-app/gui/styles/format"
 	"table-app/internal/log"
 
 	"cogentcore.org/core/core"
@@ -21,14 +23,14 @@ type SumWindow struct {
 	sumFrame  *core.Frame
 	tFields   []*core.TextField
 
-	controller    TableController
+	controller    iface.TableController
 	cell          domain.Cell
 	sum           int
 	updateChan    chan domain.Cell
 	updateSumChan chan entity.MonthYear
 }
 
-func NewSumWindow(logger log.Logger, mainFrame *core.Frame, cell domain.Cell, controller TableController,
+func NewSumWindow(logger log.Logger, mainFrame *core.Frame, cell domain.Cell, controller iface.TableController,
 	updateChan chan domain.Cell, updateSumChan chan entity.MonthYear) *SumWindow {
 	sumBody := core.NewBody("Sum").SetTitle(cell.Category)
 	sumBody.Styler(func(s *styles.Style) {
@@ -105,7 +107,7 @@ func (s *SumWindow) addInputFunction(textSum *core.Text, tFields ...*core.TextFi
 			s.cell.Value += val
 			s.sum += val
 			textSum.Update()
-			tFields[i].SetText(FormatInt(val))
+			tFields[i].SetText(format.FormatInt(val))
 
 			newTField := core.NewTextField(s.sumFrame)
 			s.addInputFunction(textSum, newTField)
@@ -170,7 +172,7 @@ func (s *SumWindow) addTextSum(textSumFrame *core.Frame) *core.Text {
 	textValueFrame := core.NewFrame(textSumFrame)
 	textValue := core.NewText(textValueFrame).
 		SetType(core.TextHeadlineSmall).
-		SetText(FormatInt(s.sum))
+		SetText(format.FormatInt(s.sum))
 	core.Bind(&s.sum, textValue)
 	return textValue
 }

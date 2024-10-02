@@ -1,4 +1,4 @@
-package gui
+package format
 
 import (
 	"slices"
@@ -20,7 +20,7 @@ func FormatInt(i int, opts ...Option) string {
 	return str
 }
 
-func addMinus(str string) string {
+func AddMinus(str string) string {
 	if str == "0" {
 		return str
 	}
