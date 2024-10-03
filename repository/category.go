@@ -44,12 +44,12 @@ func (r Category) UpsertAll(ctx context.Context, categories []domain.Category) e
 	for _, category := range categories {
 		err = upsertCategory(ctx, tx.Exec, category)
 		if err != nil {
-			err = tx.Rollback(ctx)
-			if err != nil {
+			rollbackErr := tx.Rollback(ctx)
+			if rollbackErr != nil {
 				return errors.WithMessage(err, "rollback upsert category transaction")
 			}
 
-			return errors.WithMessage(err, "upsert cell")
+			return errors.WithMessage(err, "upsert category transaction")
 		}
 	}
 
@@ -68,9 +68,9 @@ func upsertCategory(ctx context.Context, txExec TxFuncExec, category domain.Cate
 	VALUES
     	($1, $2, $3, $4)
 	ON CONFLICT (main_category, priority) 
-	DO UPDATE SET name = $1;`
+	DO UPDATE SET name = $2;`
 
-	_, err := txExec(ctx, q, category.Name, category.MainCategory, category.Priority)
+	_, err := txExec(ctx, q, category.Id, category.Name, category.MainCategory, category.Priority)
 	if err != nil {
 		return errors.WithMessage(err, "upsert category")
 	}

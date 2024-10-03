@@ -50,12 +50,12 @@ func (r Table) UpsertAll(ctx context.Context, cells []domain.Cell) error {
 	for _, cell := range cells {
 		err = upsertCell(ctx, tx.Exec, cell)
 		if err != nil {
-			err = tx.Rollback(ctx)
-			if err != nil {
+			rollbackErr := tx.Rollback(ctx)
+			if rollbackErr != nil {
 				return errors.WithMessage(err, "rollback upsert transaction")
 			}
 
-			return errors.WithMessage(err, "upsert cell")
+			return errors.WithMessage(err, "upsert cell transaction")
 		}
 	}
 
