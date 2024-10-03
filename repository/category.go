@@ -36,16 +36,16 @@ func (r Category) UpsertAll(ctx context.Context, categories []domain.Category) e
 		return r.writeToFile(categories)
 	}
 
-	tx, err := r.db.Begin(ctx)
+	tx, err := r.db.Begin()
 	if err != nil {
 		return errors.WithMessage(err, "begin upsert category transaction")
 	}
 
 	for _, category := range categories {
-		err = upsertCategory(ctx, tx.Exec, category)
+		err = upsertCategory(ctx, tx.ExecContext, category)
 		if err != nil {
-			rollbackErr := tx.Rollback(ctx)
-			if rollbackErr != nil {
+			rollBackErr := tx.Rollback()
+			if rollBackErr != nil {
 				return errors.WithMessage(err, "rollback upsert category transaction")
 			}
 
@@ -53,7 +53,7 @@ func (r Category) UpsertAll(ctx context.Context, categories []domain.Category) e
 		}
 	}
 
-	err = tx.Commit(ctx)
+	err = tx.Commit()
 	if err != nil {
 		return errors.WithMessage(err, "commit upsert category transaction")
 	}
@@ -63,7 +63,7 @@ func (r Category) UpsertAll(ctx context.Context, categories []domain.Category) e
 
 func upsertCategory(ctx context.Context, txExec TxFuncExec, category domain.Category) error {
 	q := `
-	INSERT INTO table_app.category
+	INSERT INTO category
     	(id, name, main_category, priority)
 	VALUES
     	($1, $2, $3, $4)
@@ -84,8 +84,7 @@ func (r Category) GetAll(ctx context.Context) ([]domain.Category, error) {
 	}
 
 	q := `
-	SELECT id, name, main_category, priority
-	FROM table_app.category;`
+	SELECT id, name, main_category, priority FROM category;`
 
 	var list []domain.Category
 	rows, err := r.db.Select(ctx, q)
@@ -93,7 +92,6 @@ func (r Category) GetAll(ctx context.Context) ([]domain.Category, error) {
 		return nil, errors.WithMessage(err, "get categories")
 	}
 
-	defer rows.Close()
 	for rows.Next() {
 		var cat domain.Category
 		err = rows.Scan(&cat.Id, &cat.Name, &cat.MainCategory, &cat.Priority)
@@ -101,6 +99,11 @@ func (r Category) GetAll(ctx context.Context) ([]domain.Category, error) {
 			return nil, errors.WithMessage(err, "scan row")
 		}
 		list = append(list, cat)
+	}
+
+	err = rows.Close()
+	if err != nil {
+		return nil, errors.WithMessage(err, "close rows")
 	}
 
 	return list, nil

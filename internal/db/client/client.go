@@ -2,121 +2,121 @@ package db
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"strings"
-	"time"
 
 	"table-app/internal/log"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
+	"github.com/pressly/goose/v3"
 )
 
-type Database interface {
-	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
-	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
-	Begin(ctx context.Context) (pgx.Tx, error)
-	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+type MigrationRunner interface {
+	Run(ctx context.Context, db *sql.DB, gooseOpts ...goose.ProviderOption) error
 }
 
 type Client struct {
-	logger      log.Logger
-	cli         *pgxpool.Pool
-	maxAttempts int
+	logger log.Logger
+	cli    *sql.DB
+
+	migrationRunner MigrationRunner
 }
 
-func NewClient(logger log.Logger) *Client {
-	return &Client{
-		logger:      logger,
-		cli:         &pgxpool.Pool{},
-		maxAttempts: 3,
+func NewClient(logger log.Logger, opts ...Option) *Client {
+	client := &Client{
+		logger: logger,
+		cli:    &sql.DB{},
 	}
+
+	for _, opt := range opts {
+		opt(client)
+	}
+
+	return client
 }
 
-func (c *Client) Upgrade(ctx context.Context, cfg StorageConfig) error {
-	dsn, err := getDsn(cfg)
+func (c *Client) Upgrade(ctx context.Context, config StorageConfig) error {
+	dsn, err := config.getDsn()
 	if err != nil {
 		return errors.WithMessage(err, "get dsn from cfg")
 	}
 
-	err = DoWithTries(func() error {
-		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		defer cancel()
-
-		c.cli, err = pgxpool.New(ctx, dsn)
+	if config.Schema != "public" && config.Schema != "" {
+		err = c.createSchema(ctx, config, dsn)
 		if err != nil {
-			c.logger.Error(ctx, "connect to postgres")
-			return errors.WithMessage(err, "connect to postgres")
+			return errors.WithMessage(err, "create schema")
 		}
-
-		return nil
-	}, c.maxAttempts, 5*time.Second)
-
-	if err != nil {
-		return errors.WithMessage(err, "can't connect to database")
 	}
 
+	cli, err := c.Open(dsn)
+	if err != nil {
+		return errors.WithMessage(err, "open db client")
+	}
+
+	if c.migrationRunner != nil {
+		err = c.migrationRunner.Run(ctx, cli)
+		if err != nil {
+			return errors.WithMessage(err, "run migration")
+		}
+	}
+
+	c.cli = cli
 	return nil
+}
+
+func (c *Client) Open(dsn string) (*sql.DB, error) {
+	pgxConfig, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, errors.WithMessage(err, "parse config")
+	}
+
+	return stdlib.OpenDB(*pgxConfig), nil
 }
 
 func (c *Client) Close() error {
-	c.cli.Close()
-	return nil
+	return c.cli.Close()
 }
 
-func (c *Client) Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error) {
-	return c.cli.Exec(ctx, query, args...)
+func (c *Client) Exec(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	return c.cli.ExecContext(ctx, query, args...)
 }
 
-func (c *Client) Select(ctx context.Context, query string, args ...any) (pgx.Rows, error) {
-	return c.cli.Query(ctx, query, args...)
+func (c *Client) Select(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	return c.cli.QueryContext(ctx, query, args...)
 }
 
-func (c *Client) SelectRow(ctx context.Context, query string, args ...any) pgx.Row {
-	return c.cli.QueryRow(ctx, query, args...)
+func (c *Client) SelectRow(ctx context.Context, query string, args ...any) *sql.Row {
+	return c.cli.QueryRowContext(ctx, query, args...)
 }
 
-func (c *Client) Begin(ctx context.Context) (pgx.Tx, error) {
-	return c.cli.Begin(ctx)
+func (c *Client) Begin() (*sql.Tx, error) {
+	return c.cli.Begin()
 }
 
-func (c *Client) BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error) {
+func (c *Client) BeginTx(ctx context.Context, txOptions *sql.TxOptions) (*sql.Tx, error) {
 	return c.cli.BeginTx(ctx, txOptions)
 }
 
-func DoWithTries(fn func() error, attempts int, delay time.Duration) (err error) {
-	for attempts > 0 {
-		if err = fn(); err != nil {
-			time.Sleep(delay)
-			attempts--
+func (c *Client) createSchema(ctx context.Context, config StorageConfig, dsn string) error {
+	schema := config.Schema
 
-			continue
-		}
-		return nil
+	config.Schema = ""
+	dbCli, err := c.Open(dsn)
+	if err != nil {
+		return errors.WithMessage(err, "open db")
 	}
 
-	return
-}
-
-func getDsn(cfg StorageConfig) (string, error) {
-	if len(cfg.Host) == 0 || len(cfg.Port) == 0 {
-		return "", errors.New("invalid db configuration: host and port are required")
+	_, err = dbCli.ExecContext(ctx, fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s", schema))
+	if err != nil {
+		return errors.WithMessage(err, "exec query")
 	}
 
-	if len(cfg.Database) == 0 {
-		return "", errors.New("invalid db configuration: database is required")
+	err = dbCli.Close()
+	if err != nil {
+		return errors.WithMessage(err, "close db")
 	}
 
-	if len(cfg.Username) == 0 || len(cfg.Password) == 0 {
-		return "", errors.New("invalid db configuration: username and password are required")
-	}
-
-	return fmt.Sprintf("postgresql://%s:%s@%s:%s/%s", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database), nil
-}
-
-func FormatQuery(q string) string {
-	return strings.ReplaceAll(strings.ReplaceAll(q, "\t", ""), "\n", "")
+	return nil
 }

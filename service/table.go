@@ -52,7 +52,7 @@ func (s *Table) SaveAll(ctx context.Context) error {
 	if s.isFileStorage {
 		err := s.repo.UpsertAll(ctx, cells)
 		if err != nil {
-			return errors.WithMessage(err, "upsert cells")
+			return errors.WithMessage(err, "upsert cells into file")
 		}
 
 		return nil

@@ -2,8 +2,10 @@ package app
 
 import (
 	"context"
+	"os"
+	"path"
+	"strings"
 
-	"table-app/conf"
 	"table-app/gui"
 	"table-app/internal/log"
 
@@ -11,10 +13,10 @@ import (
 )
 
 type Application struct {
-	Gui    *gui.App
-	ctx    context.Context
-	logger *log.Adapter
-	config conf.Remote
+	ctx           context.Context
+	logger        *log.Adapter
+	Gui           *gui.App
+	MigrationsDir string
 
 	cancel  context.CancelFunc
 	runners []Runner
@@ -27,9 +29,17 @@ func New() *Application {
 		panic(err)
 	}
 
+	isDev := strings.ToLower(os.Getenv("APP_MODE")) == "dev"
+
+	migrationsDir, err := migrationsDirPath(isDev)
+	if err != nil {
+		logger.Fatal(context.Background(), "resolve migrations dir path")
+	}
+
 	return &Application{
-		ctx:    context.Background(),
-		logger: logger,
+		ctx:           context.Background(),
+		logger:        logger,
+		MigrationsDir: migrationsDir,
 	}
 }
 
@@ -87,4 +97,20 @@ func logConfig() *log.Config {
 	return &log.Config{
 		InitialLevel: -1,
 	}
+}
+
+func migrationsDirPath(isDev bool) (string, error) {
+	if isDev {
+		return "./migrations", nil
+	}
+
+	return relativePathFromBin("migrations")
+}
+
+func relativePathFromBin(part string) (string, error) {
+	ex, err := os.Executable()
+	if err != nil {
+		return "", errors.WithMessage(err, "get executable path")
+	}
+	return path.Join(path.Dir(ex), part), nil
 }

@@ -22,7 +22,7 @@ type Assembly struct {
 
 func New(app *app.Application) *Assembly {
 	logger := app.Logger()
-	dbCli := db.NewClient(logger)
+	dbCli := db.NewClient(logger, db.WithMigrationRunner(app.MigrationsDir, logger))
 
 	return &Assembly{
 		logger:        logger,
@@ -32,7 +32,7 @@ func New(app *app.Application) *Assembly {
 	}
 }
 
-func (a *Assembly) ReceiveConfig(ctx context.Context, remoteConfig []byte) (*gui.App, error) {
+func (a *Assembly) ApplyConfig(ctx context.Context, remoteConfig []byte) (*gui.App, error) {
 	var newCfg conf.Remote
 
 	err := a.UpgradeConfig(remoteConfig, &newCfg)

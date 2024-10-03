@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"os"
 
 	"table-app/assembly"
@@ -10,13 +9,6 @@ import (
 
 	"github.com/pkg/errors"
 )
-
-var (
-	version = "1.0.0"
-)
-
-//go:embed design/blue.jpg
-var Files embed.FS
 
 func main() {
 	app := app.New()
@@ -30,9 +22,9 @@ func main() {
 	// запуск БД, создание кэша и подключение к gui хендлеров
 	assembly := assembly.New(app)
 
-	app.Gui, err = assembly.ReceiveConfig(app.Context(), remoteCfg)
+	app.Gui, err = assembly.ApplyConfig(app.Context(), remoteCfg)
 	if err != nil {
-		logger.Fatal(app.Context(), errors.WithMessage(err, "failed to receive config"))
+		logger.Fatal(app.Context(), errors.WithMessage(err, "failed to apply config"))
 	}
 
 	// добавление функций старта и завершения

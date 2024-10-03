@@ -2,20 +2,18 @@ package db
 
 import (
 	"context"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
+	"database/sql"
 )
 
 type DB interface {
-	Exec(ctx context.Context, query string, args ...any) (pgconn.CommandTag, error)
-	Select(ctx context.Context, query string, args ...any) (pgx.Rows, error)
-	SelectRow(ctx context.Context, query string, args ...any) pgx.Row
-	Begin(ctx context.Context) (pgx.Tx, error)
-	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+	Exec(ctx context.Context, query string, args ...any) (sql.Result, error)
+	Select(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	SelectRow(ctx context.Context, query string, args ...any) *sql.Row
+	Begin() (*sql.Tx, error)
+	BeginTx(ctx context.Context, txOptions *sql.TxOptions) (*sql.Tx, error)
 }
 
 type Transactional interface {
-	Begin(ctx context.Context) (pgx.Tx, error)
-	BeginTx(ctx context.Context, txOptions pgx.TxOptions) (pgx.Tx, error)
+	Begin() (*sql.Tx, error)
+	BeginTx(ctx context.Context, txOptions *sql.TxOptions) (*sql.Tx, error)
 }

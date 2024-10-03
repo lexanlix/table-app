@@ -6,7 +6,8 @@
       "port": "5432",
       "database": "postgres",
       "username": "postgres",
-      "password": "postgres"
+      "password": "postgres",
+      "schema": "table_app"
     }
   },
   "settings": {
