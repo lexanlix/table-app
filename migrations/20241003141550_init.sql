@@ -1,14 +1,4 @@
 -- +goose Up
-CREATE TABLE finances
-(
-    id              UUID NOT NULL PRIMARY KEY,
-    main_category   TEXT NOT NULL,
-    category        TEXT NOT NULL REFERENCES table_app.category(name) ON UPDATE CASCADE,
-    value           INT NOT NULL,
-    month           INT NOT NULL,
-    year            INT NOT NULL
-);
-
 CREATE TABLE category
 (
     id              UUID NOT NULL,
@@ -17,6 +7,16 @@ CREATE TABLE category
     priority        INT NOT NULL,
 
     CONSTRAINT category_pk PRIMARY KEY (main_category, priority)
+);
+
+CREATE TABLE finances
+(
+    id              UUID NOT NULL PRIMARY KEY,
+    main_category   TEXT NOT NULL,
+    category        TEXT NOT NULL REFERENCES category(name) ON UPDATE CASCADE,
+    value           INT NOT NULL,
+    month           INT NOT NULL,
+    year            INT NOT NULL
 );
 
 -- +goose Down
