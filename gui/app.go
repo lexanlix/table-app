@@ -77,6 +77,69 @@ func (a *App) Upgrade(data *domain.GuiTableData) {
 		yearTable := table.NewTable(mainFrame, year, data, a.settings, a.controller, a.updater, a.sumUpdater)
 		yearTable.Draw()
 	}
+
+	underTableFrame := core.NewFrame(mainFrame)
+	underTableFrame.SetName("underTableFrame")
+	underTableFrame.Styler(func(s *styles.Style) {
+		s.Direction = styles.Column
+	})
+
+	updatingFrame := core.NewFrame(underTableFrame)
+	updatingFrame.SetName("updatingFrame")
+
+	leftUpdatingFrame := core.NewFrame(updatingFrame)
+	leftUpdatingFrame.SetName("leftUpdatingFrame")
+	leftUpdatingFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(100)
+	})
+	core.NewText(leftUpdatingFrame).SetText("Обновлено: ")
+
+	updatedTime := a.controller.GetLastUpdated()
+
+	rightUpdatingFrame := core.NewFrame(updatingFrame)
+	rightUpdatingFrame.SetName("rightUpdatingFrame")
+	rightUpdatingFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(300)
+	})
+
+	updatingText := core.NewText(rightUpdatingFrame)
+	a.sumUpdater.AddText(updatingText)
+	core.Bind(updatedTime, updatingText.SetText(*updatedTime))
+
+	lastRecordFrame := core.NewFrame(underTableFrame)
+	lastRecordFrame.SetName("lastRecordFrame")
+	lastRecordFrame.Styler(func(s *styles.Style) {
+		s.CenterAll()
+	})
+
+	leftLastRecordFrame := core.NewFrame(lastRecordFrame)
+	leftLastRecordFrame.SetName("leftLastRecordFrame")
+	leftLastRecordFrame.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(160)
+	})
+	core.NewText(leftLastRecordFrame).SetText("Последняя запись: ")
+
+	lastRecord := a.controller.GetLastRecord()
+
+	rightLastRecordFrame := core.NewFrame(lastRecordFrame)
+	rightLastRecordFrame.SetName("rightLastRecordFrame")
+
+	recordTField := core.NewTextField(rightLastRecordFrame)
+	recordTField.Styler(func(s *styles.Style) {
+		s.Min.X.Dp(500)
+		s.Border.Radius.Zero()
+		s.Border.Width.Zero()
+		s.Border.Offset.Zero()
+	})
+	recordTField.SetText(lastRecord)
+	recordTField.OnInput(func(e events.Event) {
+		inputText := recordTField.Text()
+		err := a.controller.SetLastRecord(inputText)
+		if err != nil {
+			a.logger.Error(context.Background(), "set last record error: "+err.Error())
+			core.MessageSnackbar(a.appBody, "Ошибка ввода последней записи: "+err.Error())
+		}
+	})
 }
 
 func (a *App) Run() {

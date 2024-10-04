@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	"table-app/domain"
 	"table-app/internal/log"
@@ -30,19 +31,35 @@ type CalculationService interface {
 	GetAnnualResult(year int) map[string]int
 }
 
+type UpdatingService interface {
+	UpsertAllData(ctx context.Context) error
+	SetLastUpdated(updatedTime time.Time) error
+	GetLastUpdated() *string
+	SetLastRecord(lastRecord string) error
+	GetLastRecord() string
+}
+
 type Table struct {
 	logger             log.Logger
 	service            TableService
 	categoryService    CategoryService
 	calculationService CalculationService
+	updatingService    UpdatingService
 }
 
-func NewTable(logger log.Logger, service TableService, categoryService CategoryService, calculationService CalculationService) Table {
+func NewTable(
+	logger log.Logger,
+	service TableService,
+	categoryService CategoryService,
+	calculationService CalculationService,
+	updatingService UpdatingService,
+) Table {
 	return Table{
 		logger:             logger,
 		service:            service,
 		categoryService:    categoryService,
 		calculationService: calculationService,
+		updatingService:    updatingService,
 	}
 }
 
@@ -58,7 +75,17 @@ func (c Table) UpsertValue(ctx context.Context, cell domain.Cell) error {
 		return errors.WithMessage(err, "validate cell")
 	}
 
-	return c.service.Upsert(cell)
+	err = c.service.Upsert(cell)
+	if err != nil {
+		return errors.WithMessage(err, "upsert cell")
+	}
+
+	err = c.updatingService.SetLastUpdated(time.Now())
+	if err != nil {
+		return errors.WithMessage(err, "set last updated time")
+	}
+
+	return nil
 }
 
 // SaveAll
@@ -73,7 +100,17 @@ func (c Table) SaveAll(ctx context.Context) error {
 		return errors.WithMessage(err, "save all categories")
 	}
 
-	return c.service.SaveAll(ctx)
+	err = c.service.SaveAll(ctx)
+	if err != nil {
+		return errors.WithMessage(err, "save all cells")
+	}
+
+	err = c.updatingService.UpsertAllData(ctx)
+	if err != nil {
+		return errors.WithMessage(err, "upsert all updated data")
+	}
+
+	return nil
 }
 
 // AddCategory
@@ -83,7 +120,16 @@ func (c Table) AddCategory(ctx context.Context, category domain.Category) error 
 		log.String("mainCategory", category.MainCategory),
 		log.String("category", category.Name))
 
-	return c.categoryService.AddCategory(category)
+	err := c.categoryService.AddCategory(category)
+	if err != nil {
+		return errors.WithMessage(err, "add category")
+	}
+
+	err = c.updatingService.SetLastUpdated(time.Now())
+	if err != nil {
+		return errors.WithMessage(err, "set last updated time")
+	}
+	return nil
 }
 
 // UpdateCategoryName
@@ -98,7 +144,10 @@ func (c Table) UpdateCategoryName(ctx context.Context, old, new domain.Category)
 		return errors.WithMessage(err, "update category")
 	}
 
-	c.service.UpdateCategoryName(old, new)
+	err = c.updatingService.SetLastUpdated(time.Now())
+	if err != nil {
+		return errors.WithMessage(err, "set last updated time")
+	}
 	return nil
 }
 
@@ -146,4 +195,22 @@ func (c Table) UpsertBalance(month, year int) (map[string]int, error) {
 // Годовой итог
 func (c Table) GetAnnualResult(year int) map[string]int {
 	return c.calculationService.GetAnnualResult(year)
+}
+
+// GetLastUpdated
+// Получить дату последнего обновления таблицы
+func (c Table) GetLastUpdated() *string {
+	return c.updatingService.GetLastUpdated()
+}
+
+// GetLastRecord
+// Получить данные последней записи
+func (c Table) GetLastRecord() string {
+	return c.updatingService.GetLastRecord()
+}
+
+// SetLastRecord
+// Сохранить данные последней записи
+func (c Table) SetLastRecord(lastRecord string) error {
+	return c.updatingService.SetLastRecord(lastRecord)
 }

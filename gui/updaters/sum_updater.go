@@ -19,6 +19,8 @@ type SumUpdater struct {
 	balanceFields     map[string]*core.Text
 	controller        iface.TableController
 
+	updatedTimeText *core.Text
+
 	lock       sync.Mutex
 	wgGroup    sync.WaitGroup
 	updateChan chan entity.MonthYear
@@ -94,6 +96,8 @@ func (u *SumUpdater) start() {
 
 				u.consumptionFields[compositeDate] = consumptionField
 
+				u.updatedTimeText.Update()
+
 				u.lock.Unlock()
 			}
 		}
@@ -133,5 +137,11 @@ func (u *SumUpdater) AddBalanceText(month, year int, tField *core.Text) {
 	compositeDate := utils.GetCompositeDate(month, year)
 	u.balanceFields[compositeDate] = tField
 
+	u.lock.Unlock()
+}
+
+func (u *SumUpdater) AddText(updatedText *core.Text) {
+	u.lock.Lock()
+	u.updatedTimeText = updatedText
 	u.lock.Unlock()
 }

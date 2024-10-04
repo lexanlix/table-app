@@ -34,6 +34,7 @@ func NewLocator(db DB, logger log.Logger) Locator {
 func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func()) (*gui.App, error) {
 	tableRepo := repository.NewTable(l.db, cfg.Storage)
 	categoryRepo := repository.NewCategory(l.db, cfg.Storage)
+	updatingRepo := repository.NewUpdated(l.db)
 
 	cellsData, err := tableRepo.GetAll(ctx)
 	if err != nil {
@@ -71,8 +72,12 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	tableService := service.NewTable(l.logger, cellsCache, tableRepo, cfg.Settings, isFileStorage)
 	categoryService := service.NewCategory(l.logger, categoryCache, categoryRepo)
 	calculationService := service.NewCalculation(calculationCache, cellsCache, categoryCache, cfg.Settings)
+	updatingService, err := service.NewUpdating(updatingRepo)
+	if err != nil {
+		return nil, errors.WithMessage(err, "create updating service")
+	}
 
-	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService)
+	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService, updatingService)
 
 	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, cfg.Settings, shutdownFunc)
 
