@@ -91,7 +91,7 @@ func (c Table) UpsertValue(ctx context.Context, cell domain.Cell) error {
 // SaveAll
 // Сохранение всех кешей в БД
 func (c Table) SaveAll(ctx context.Context) error {
-	c.logger.Debug(ctx, "save all")
+	c.logger.Debug(ctx, "save all tables data")
 
 	// сначала сохраняются изменения в категориях, так как в таблице ячеек обновляются
 	// названия категорий, и по ним далее идет обновление значений ячеек
