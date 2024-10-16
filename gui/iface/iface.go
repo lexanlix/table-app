@@ -24,3 +24,12 @@ type TableController interface {
 	GetLastRecord() string
 	SetLastRecord(lastRecord string) error
 }
+
+type AccountController interface {
+	SaveAll(ctx context.Context) error
+	GetAll(ctx context.Context) ([]domain.Account, error)
+	AddAccount(ctx context.Context, account domain.Account) error
+	UpdateAccount(ctx context.Context, account domain.Account) error
+	UpdateList(ctx context.Context, list []domain.Account) error
+	GetSum(ctx context.Context) (domain.Sum, error)
+}
