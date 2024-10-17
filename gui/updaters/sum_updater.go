@@ -17,29 +17,43 @@ type SumUpdater struct {
 	logger            log.Logger
 	consumptionFields map[string]*core.Text
 	balanceFields     map[string]*core.Text
-	controller        iface.TableController
+	mainSumText       *core.Text
+	diffSumText       *core.Text
+	tableController   iface.TableController
+	accountController iface.AccountController
 
 	updatedTimeText *core.Text
 
-	lock       sync.Mutex
-	wgGroup    sync.WaitGroup
-	updateChan chan entity.MonthYear
+	lock               sync.Mutex
+	wgGroup            sync.WaitGroup
+	updateChan         chan entity.MonthYear
+	updateAccountsChan chan struct{}
 }
 
-func NewSumUpdater(logger log.Logger, controller iface.TableController) *SumUpdater {
+func NewSumUpdater(
+	logger log.Logger,
+	tableController iface.TableController,
+	accountController iface.AccountController,
+) *SumUpdater {
 	return &SumUpdater{
-		logger:            logger,
-		consumptionFields: make(map[string]*core.Text),
-		balanceFields:     make(map[string]*core.Text),
-		controller:        controller,
-		lock:              sync.Mutex{},
-		wgGroup:           sync.WaitGroup{},
-		updateChan:        make(chan entity.MonthYear),
+		logger:             logger,
+		consumptionFields:  make(map[string]*core.Text),
+		balanceFields:      make(map[string]*core.Text),
+		tableController:    tableController,
+		accountController:  accountController,
+		lock:               sync.Mutex{},
+		wgGroup:            sync.WaitGroup{},
+		updateChan:         make(chan entity.MonthYear),
+		updateAccountsChan: make(chan struct{}),
 	}
 }
 
 func (u *SumUpdater) GetUpdateChan() chan entity.MonthYear {
 	return u.updateChan
+}
+
+func (u *SumUpdater) GetUpdateAccountsChan() chan struct{} {
+	return u.updateAccountsChan
 }
 
 func (u *SumUpdater) SendToChannel(obj entity.MonthYear) {
@@ -61,9 +75,9 @@ func (u *SumUpdater) start() {
 				}
 
 				// сначала изменяются расходы, затем остаток, так как он пересчитывается с учетом расходов
-				consumption := u.controller.GetConsumptionSum(date.Month, date.Year)
+				consumption := u.tableController.GetConsumptionSum(date.Month, date.Year)
 
-				balanceById, err := u.controller.UpsertBalance(date.Month, date.Year)
+				balanceById, err := u.tableController.UpsertBalance(date.Month, date.Year)
 				if err != nil {
 					u.logger.Error(context.Background(), "get balance sum", log.Any("err", err))
 					continue
@@ -97,7 +111,17 @@ func (u *SumUpdater) start() {
 				u.consumptionFields[compositeDate] = consumptionField
 
 				u.updatedTimeText.Update()
+				u.updateSumTexts()
 
+				u.lock.Unlock()
+			}
+		case _, isOpen := <-u.updateAccountsChan:
+			{
+				if !isOpen {
+					return
+				}
+				u.lock.Lock()
+				u.updateSumTexts()
 				u.lock.Unlock()
 			}
 		}
@@ -106,12 +130,13 @@ func (u *SumUpdater) start() {
 
 func (u *SumUpdater) Close() {
 	close(u.updateChan)
+	close(u.updateAccountsChan)
 }
 
 func (u *SumUpdater) AddConsumptionText(month, year int, tField *core.Text) {
 	u.lock.Lock()
 
-	sum := u.controller.GetConsumptionSum(month, year)
+	sum := u.tableController.GetConsumptionSum(month, year)
 	tField.SetText(format.FormatInt(sum, format.AddMinus))
 
 	compositeDate := utils.GetCompositeDate(month, year)
@@ -126,7 +151,7 @@ func (u *SumUpdater) AddBalanceText(month, year int, tField *core.Text) {
 	var sum int
 	var err error
 
-	sum, err = u.controller.GetBalanceSum(month, year)
+	sum, err = u.tableController.GetBalanceSum(month, year)
 	if err != nil {
 		u.logger.Error(context.Background(), "get balance sum", log.Any("err", err))
 		sum = 0
@@ -140,8 +165,30 @@ func (u *SumUpdater) AddBalanceText(month, year int, tField *core.Text) {
 	u.lock.Unlock()
 }
 
-func (u *SumUpdater) AddText(updatedText *core.Text) {
+func (u *SumUpdater) AddUpdatedTimeText(updatedText *core.Text) {
 	u.lock.Lock()
+	defer u.lock.Unlock()
 	u.updatedTimeText = updatedText
-	u.lock.Unlock()
+}
+
+func (u *SumUpdater) AddSumTexts(mainSumText, diffSumText *core.Text) {
+	u.lock.Lock()
+	defer u.lock.Unlock()
+
+	u.mainSumText = mainSumText
+	u.diffSumText = diffSumText
+}
+
+func (u *SumUpdater) updateSumTexts() {
+	sums, err := u.accountController.GetSum(context.Background())
+	if err != nil {
+		u.logger.Error(context.Background(), "get account sums: "+err.Error())
+		return
+	}
+
+	u.mainSumText.SetText(format.FormatInt(sums.MainSum))
+	u.mainSumText.Update()
+
+	u.diffSumText.SetText(format.FormatInt(sums.DiffSum))
+	u.diffSumText.Update()
 }
