@@ -35,19 +35,29 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	tableRepo := repository.NewTable(l.db, cfg.Storage)
 	categoryRepo := repository.NewCategory(l.db, cfg.Storage)
 	updatingRepo := repository.NewUpdated(l.db)
+	accountRepo := repository.NewAccount(l.db)
 
 	cellsData, err := tableRepo.GetAll(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get cells")
 	}
 
-	categoryList, err := categoryRepo.GetAll(ctx)
+	categoryData, err := categoryRepo.GetAll(ctx)
 	if err != nil {
 		return nil, errors.WithMessage(err, "get categories")
 	}
 
-	if len(categoryList) == 0 {
-		categoryList = domain.GetStartingCategories(cfg.Settings.MainCategoryOrder)
+	if len(categoryData) == 0 {
+		categoryData = domain.GetStartingCategories(cfg.Settings.MainCategoryOrder)
+	}
+
+	accountData, err := accountRepo.GetAll(ctx)
+	if err != nil {
+		return nil, errors.WithMessage(err, "get accounts")
+	}
+
+	if len(accountData) == 0 {
+		accountData = domain.GetStartingAccounts()
 	}
 
 	cellsCache := repository.NewCellsCache()
@@ -55,11 +65,15 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	cellsList := cellsCache.GetList()
 
 	categoryCache := repository.NewCategoryCache(cfg.Settings.MainCategoryOrder)
-	categoryCache.InitCache(categoryList)
-	categoryArray := categoryCache.GetCategoryArray()
+	categoryCache.InitCache(categoryData)
+	categoryList := categoryCache.GetCategoryArray()
+
+	accountCache := repository.NewAccountCache()
+	accountCache.InitCache(accountData)
+	accountList := accountCache.GetListPtr()
 
 	calculationCache := repository.NewCalculationCache(cfg.Settings)
-	err = calculationCache.InitCache(cellsList, categoryArray)
+	err = calculationCache.InitCache(cellsList, categoryList)
 	if err != nil {
 		return nil, errors.WithMessage(err, "init calculation cache")
 	}
@@ -71,20 +85,24 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 
 	tableService := service.NewTable(l.logger, cellsCache, tableRepo, cfg.Settings, isFileStorage)
 	categoryService := service.NewCategory(l.logger, categoryCache, categoryRepo)
-	calculationService := service.NewCalculation(calculationCache, cellsCache, categoryCache, cfg.Settings)
+	calculationService := service.NewCalculation(calculationCache, cellsCache, categoryCache, accountCache, cfg.Settings)
 	updatingService, err := service.NewUpdating(updatingRepo)
 	if err != nil {
 		return nil, errors.WithMessage(err, "create updating service")
 	}
 
+	accountService := service.NewAccount(l.logger, accountRepo, accountCache)
+
 	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService, updatingService)
+	accountCtrl := controller.NewAccount(l.logger, accountService, calculationService)
+	updatingCtrl := controller.NewUpdating(l.logger, updatingService)
 
-	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, cfg.Settings, shutdownFunc)
-
+	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, accountCtrl, updatingCtrl, cfg.Settings, shutdownFunc)
 	guiApp.Upgrade(&domain.GuiTableData{
-		Categories:        categoryArray,
+		Categories:        categoryList,
 		ValuesList:        cellsList,
 		MainCategoryOrder: cfg.Settings.MainCategoryOrder,
+		Accounts:          accountList,
 	})
 
 	return guiApp, nil

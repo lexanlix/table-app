@@ -8,6 +8,7 @@ import (
 	"table-app/domain"
 	"table-app/gui/iface"
 	"table-app/gui/table"
+	"table-app/gui/undertable"
 	"table-app/gui/updaters"
 	"table-app/internal/log"
 
@@ -18,16 +19,26 @@ import (
 )
 
 type App struct {
-	logger     log.Logger
-	appBody    *core.Body
-	toolBar    *core.Toolbar
-	controller iface.TableController
-	settings   conf.Setting
-	updater    *updaters.Updater
-	sumUpdater *updaters.SumUpdater
+	logger             log.Logger
+	appBody            *core.Body
+	toolBar            *core.Toolbar
+	tableController    iface.TableController
+	accountController  iface.AccountController
+	updatingController iface.UpdatingController
+	settings           conf.Setting
+	updater            *updaters.Updater
+	sumUpdater         *updaters.SumUpdater
 }
 
-func NewApp(logger log.Logger, cfg Config, controller iface.TableController, settings conf.Setting, shutdownFunc func()) *App {
+func NewApp(
+	logger log.Logger,
+	cfg Config,
+	tableController iface.TableController,
+	accountController iface.AccountController,
+	updatingController iface.UpdatingController,
+	settings conf.Setting,
+	shutdownFunc func(),
+) *App {
 	body := core.NewBody(cfg.Title)
 	body.Styler(func(s *styles.Style) {
 		s.Min.Set(units.Dp(cfg.SizeDp))
@@ -36,15 +47,20 @@ func NewApp(logger log.Logger, cfg Config, controller iface.TableController, set
 	})
 
 	updater := updaters.NewUpdater(logger)
-	sumUpdater := updaters.NewSumUpdater(logger, controller)
+	sumUpdater := updaters.NewSumUpdater(logger, tableController, accountController)
 
 	body.OnClose(func(e events.Event) {
 		ctx := context.Background()
 		logger.Info(ctx, "starting close")
 
-		err := controller.SaveAll(context.Background())
+		err := tableController.SaveAll(ctx)
 		if err != nil {
-			logger.Error(context.Background(), "save all data error: "+err.Error())
+			logger.Error(ctx, "save all data error: "+err.Error())
+		}
+
+		err = accountController.SaveAll(ctx)
+		if err != nil {
+			logger.Error(ctx, "save all account data error: "+err.Error())
 		}
 
 		updater.Close()
@@ -55,12 +71,14 @@ func NewApp(logger log.Logger, cfg Config, controller iface.TableController, set
 	})
 
 	return &App{
-		logger:     logger,
-		appBody:    body,
-		controller: controller,
-		settings:   settings,
-		updater:    updater,
-		sumUpdater: sumUpdater,
+		logger:             logger,
+		appBody:            body,
+		tableController:    tableController,
+		accountController:  accountController,
+		updatingController: updatingController,
+		settings:           settings,
+		updater:            updater,
+		sumUpdater:         sumUpdater,
 	}
 }
 
@@ -74,72 +92,13 @@ func (a *App) Upgrade(data *domain.GuiTableData) {
 	})
 
 	for year := a.settings.StartYear; year <= time.Now().Year(); year++ {
-		yearTable := table.NewTable(mainFrame, year, data, a.settings, a.controller, a.updater, a.sumUpdater)
+		yearTable := table.NewTable(mainFrame, year, data, a.settings, a.tableController, a.updater, a.sumUpdater)
 		yearTable.Draw()
 	}
 
-	underTableFrame := core.NewFrame(mainFrame)
-	underTableFrame.SetName("underTableFrame")
-	underTableFrame.Styler(func(s *styles.Style) {
-		s.Direction = styles.Column
-	})
-
-	updatingFrame := core.NewFrame(underTableFrame)
-	updatingFrame.SetName("updatingFrame")
-
-	leftUpdatingFrame := core.NewFrame(updatingFrame)
-	leftUpdatingFrame.SetName("leftUpdatingFrame")
-	leftUpdatingFrame.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(100)
-	})
-	core.NewText(leftUpdatingFrame).SetText("Обновлено: ")
-
-	updatedTime := a.controller.GetLastUpdated()
-
-	rightUpdatingFrame := core.NewFrame(updatingFrame)
-	rightUpdatingFrame.SetName("rightUpdatingFrame")
-	rightUpdatingFrame.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(300)
-	})
-
-	updatingText := core.NewText(rightUpdatingFrame)
-	a.sumUpdater.AddText(updatingText)
-	core.Bind(updatedTime, updatingText.SetText(*updatedTime))
-
-	lastRecordFrame := core.NewFrame(underTableFrame)
-	lastRecordFrame.SetName("lastRecordFrame")
-	lastRecordFrame.Styler(func(s *styles.Style) {
-		s.CenterAll()
-	})
-
-	leftLastRecordFrame := core.NewFrame(lastRecordFrame)
-	leftLastRecordFrame.SetName("leftLastRecordFrame")
-	leftLastRecordFrame.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(160)
-	})
-	core.NewText(leftLastRecordFrame).SetText("Последняя запись: ")
-
-	lastRecord := a.controller.GetLastRecord()
-
-	rightLastRecordFrame := core.NewFrame(lastRecordFrame)
-	rightLastRecordFrame.SetName("rightLastRecordFrame")
-
-	recordTField := core.NewTextField(rightLastRecordFrame)
-	recordTField.Styler(func(s *styles.Style) {
-		s.Min.X.Dp(500)
-		s.Border.Radius.Zero()
-		s.Border.Width.Zero()
-		s.Border.Offset.Zero()
-	})
-	recordTField.SetText(lastRecord)
-	recordTField.OnInput(func(e events.Event) {
-		inputText := recordTField.Text()
-		err := a.controller.SetLastRecord(inputText)
-		if err != nil {
-			a.logger.Error(context.Background(), "set last record error: "+err.Error())
-			core.MessageSnackbar(a.appBody, "Ошибка ввода последней записи: "+err.Error())
-		}
-	})
+	underTable := undertable.NewUnderTable(a.logger, a.appBody, mainFrame, a.updatingController, a.accountController,
+		a.sumUpdater, data.Accounts)
+	underTable.Draw()
 }
 
 func (a *App) Run() {

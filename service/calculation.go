@@ -6,6 +6,7 @@ import (
 
 	"table-app/conf"
 	"table-app/domain"
+	"table-app/entity"
 	"table-app/repository"
 	"table-app/utils"
 
@@ -16,6 +17,7 @@ type Calculation struct {
 	cache         *repository.CalculationCache
 	cellsCache    *repository.CellsCache
 	categoryCache *repository.CategoryCache
+	accountCache  *repository.AccountCache
 	settings      conf.Setting
 }
 
@@ -23,12 +25,14 @@ func NewCalculation(
 	cache *repository.CalculationCache,
 	cellsCache *repository.CellsCache,
 	categoryCache *repository.CategoryCache,
+	accountCache *repository.AccountCache,
 	settings conf.Setting,
 ) *Calculation {
 	return &Calculation{
 		cache:         cache,
 		cellsCache:    cellsCache,
 		categoryCache: categoryCache,
+		accountCache:  accountCache,
 		settings:      settings,
 	}
 }
@@ -248,4 +252,28 @@ func (s *Calculation) GetAnnualResult(year int) map[string]int {
 	res[domain.ColumnBalance] = balanceResult
 
 	return res
+}
+
+func (s *Calculation) GetSum() (domain.Sum, error) {
+	sum := domain.Sum{}
+
+	s.accountCache.Lock()
+	accountList := s.accountCache.ReadAll()
+	s.accountCache.Unlock()
+
+	// Считаем общую сумму по счетам
+	for _, account := range accountList {
+		if account.IsInSum && !account.Deleted {
+			sum.MainSum += account.Sum
+		}
+	}
+
+	// Остаток в последнем месяце
+	lastBalance, ok := s.cache.GetBalance(int(time.Now().Month()), time.Now().Year())
+	if !ok {
+		return domain.Sum{}, entity.ErrBalanceNotFound
+	}
+
+	sum.DiffSum = sum.MainSum - lastBalance
+	return sum, nil
 }

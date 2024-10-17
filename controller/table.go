@@ -29,14 +29,7 @@ type CalculationService interface {
 	UpsertBalance(month, year int) (map[string]int, error)
 	BalanceSum(month, year int) (int, error)
 	GetAnnualResult(year int) map[string]int
-}
-
-type UpdatingService interface {
-	UpsertAllData(ctx context.Context) error
-	SetLastUpdated(updatedTime time.Time) error
-	GetLastUpdated() *string
-	SetLastRecord(lastRecord string) error
-	GetLastRecord() string
+	GetSum() (domain.Sum, error)
 }
 
 type Table struct {
@@ -195,22 +188,4 @@ func (c Table) UpsertBalance(month, year int) (map[string]int, error) {
 // Годовой итог
 func (c Table) GetAnnualResult(year int) map[string]int {
 	return c.calculationService.GetAnnualResult(year)
-}
-
-// GetLastUpdated
-// Получить дату последнего обновления таблицы
-func (c Table) GetLastUpdated() *string {
-	return c.updatingService.GetLastUpdated()
-}
-
-// GetLastRecord
-// Получить данные последней записи
-func (c Table) GetLastRecord() string {
-	return c.updatingService.GetLastRecord()
-}
-
-// SetLastRecord
-// Сохранить данные последней записи
-func (c Table) SetLastRecord(lastRecord string) error {
-	return c.updatingService.SetLastRecord(lastRecord)
 }

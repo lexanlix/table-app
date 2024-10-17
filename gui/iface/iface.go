@@ -19,7 +19,9 @@ type TableController interface {
 	UpsertBalance(month, year int) (map[string]int, error)
 
 	GetAnnualResult(year int) map[string]int
+}
 
+type UpdatingController interface {
 	GetLastUpdated() *string
 	GetLastRecord() string
 	SetLastRecord(lastRecord string) error
