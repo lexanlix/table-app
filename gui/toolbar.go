@@ -41,7 +41,9 @@ func (a *App) createToolbar(categories [][]domain.Category) {
 		tree.Add(p, func(w *core.Button) {
 			w.SetText("Новая категория")
 			w.OnClick(func(e events.Event) {
-				categoryDialog := dialogs.NewCategoryDialog(a.logger, a.appBody, a.tableController, categories)
+				categoryDialog := dialogs.NewCategoryDialog(
+					a.logger, a.appBody, a.tableController, categories, a.styleUpdater.GetUpdateChan(),
+				)
 				categoryDialog.Run()
 			})
 		})

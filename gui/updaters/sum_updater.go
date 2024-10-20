@@ -13,6 +13,8 @@ import (
 	"cogentcore.org/core/core"
 )
 
+// SumUpdater Обновляет данные таблицы при изменении ее содержимого,
+// также обновляет данные о суммах и время последнего изменения в таблице
 type SumUpdater struct {
 	logger            log.Logger
 	consumptionFields map[string]*core.Text
@@ -90,6 +92,7 @@ func (u *SumUpdater) start() {
 				if !ok {
 					u.logger.Error(context.Background(), "not found consumption field",
 						log.String("compositeDate", compositeDate))
+					u.lock.Unlock()
 					continue
 				}
 
@@ -101,6 +104,7 @@ func (u *SumUpdater) start() {
 					if !ok {
 						u.logger.Error(context.Background(), "not found balance field",
 							log.String("compositeDate", compositeDate))
+						u.lock.Unlock()
 						continue
 					}
 					balanceField.SetText(format.FormatInt(balance))

@@ -28,6 +28,7 @@ type App struct {
 	settings           conf.Setting
 	updater            *updaters.Updater
 	sumUpdater         *updaters.SumUpdater
+	styleUpdater       *updaters.StyleUpdater
 }
 
 func NewApp(
@@ -48,6 +49,7 @@ func NewApp(
 
 	updater := updaters.NewUpdater(logger)
 	sumUpdater := updaters.NewSumUpdater(logger, tableController, accountController)
+	styleUpdater := updaters.NewStyleUpdater(logger, body)
 
 	body.OnClose(func(e events.Event) {
 		ctx := context.Background()
@@ -79,6 +81,7 @@ func NewApp(
 		settings:           settings,
 		updater:            updater,
 		sumUpdater:         sumUpdater,
+		styleUpdater:       styleUpdater,
 	}
 }
 
@@ -104,6 +107,8 @@ func (a *App) Upgrade(data *domain.GuiTableData) {
 func (a *App) Run() {
 	a.updater.Start()
 	a.sumUpdater.Start()
+	a.styleUpdater.Start()
+
 	a.appBody.RunMainWindow()
 }
 

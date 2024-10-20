@@ -12,6 +12,7 @@ import (
 	"cogentcore.org/core/core"
 )
 
+// Updater обновляет значения ячеек при вводе суммы через сумматор
 type Updater struct {
 	logger   log.Logger
 	guiCells map[string]*core.TextField

@@ -14,12 +14,13 @@ import (
 )
 
 type CategoryDialog struct {
-	logger         log.Logger
-	appBody        *core.Body
-	dialogBody     *core.Body
-	controller     iface.TableController
-	mainCategories []string
-	category       domain.Category
+	logger          log.Logger
+	appBody         *core.Body
+	dialogBody      *core.Body
+	controller      iface.TableController
+	mainCategories  []string
+	category        domain.Category
+	updateStyleChan chan struct{}
 }
 
 func NewCategoryDialog(
@@ -27,6 +28,7 @@ func NewCategoryDialog(
 	appBody *core.Body,
 	controller iface.TableController,
 	categories [][]domain.Category,
+	updateStyleChan chan struct{},
 ) *CategoryDialog {
 	dialogBody := core.NewBody("NewCategory").
 		SetTitle("Добавление категории")
@@ -50,12 +52,13 @@ func NewCategoryDialog(
 	buttonsFrame := core.NewFrame(mainDialogFrame)
 
 	dialog := &CategoryDialog{
-		logger:         logger,
-		appBody:        appBody,
-		dialogBody:     dialogBody,
-		controller:     controller,
-		mainCategories: getMainCategories(categories),
-		category:       domain.Category{},
+		logger:          logger,
+		appBody:         appBody,
+		dialogBody:      dialogBody,
+		controller:      controller,
+		mainCategories:  getMainCategories(categories),
+		category:        domain.Category{},
+		updateStyleChan: updateStyleChan,
 	}
 
 	dialog.addCategoryInput(inputFrame)
@@ -177,6 +180,7 @@ func (s *CategoryDialog) addControlButtons(buttonsFrame *core.Frame) {
 		}
 
 		s.appBody.Update()
+		s.updateStyleChan <- struct{}{}
 		s.close()
 	})
 }

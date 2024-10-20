@@ -49,6 +49,13 @@ func NewUnderTable(
 	upperFrame.SetName("upperFrame")
 	upperFrame.Styler(func(s *styles.Style) {
 		s.CenterAll()
+
+		tableFrame := appBody.Child(1).AsTree().Child(0).AsTree().This.(*core.Frame)
+		sizeX := tableFrame.Geom.Size.Actual.Total.X
+
+		if sizeX > custom.MinUpperUnderTableFrameSize {
+			s.Min.X.Dp(sizeX / custom.PixToDp)
+		}
 	})
 
 	core.NewSpace(underTableFrame).Styler(func(s *styles.Style) {
