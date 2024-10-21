@@ -3,6 +3,7 @@ package undertable
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"table-app/gui/dialogs"
 	"table-app/gui/styles/format"
@@ -73,7 +74,7 @@ func (t *UnderTable) drawAccounts() {
 				accountFieldSum.SetText(format.FormatInt((*t.accountList)[i].Sum))
 
 				accountFieldSum.OnChange(func(e events.Event) {
-					sum, err := strconv.Atoi(accountFieldSum.Text())
+					sum, err := strconv.Atoi(strings.Join(strings.Fields(accountFieldSum.Text()), ""))
 					if err != nil {
 						core.MessageSnackbar(t.underTableFrame,
 							"Неверный формат введенной суммы на счете "+(*t.accountList)[i].Name)

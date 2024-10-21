@@ -34,6 +34,7 @@ type Table struct {
 }
 
 func NewTable(
+	logger log.Logger,
 	frame *core.Frame,
 	year int,
 	data *domain.GuiTableData,
@@ -54,6 +55,7 @@ func NewTable(
 	core.NewText(yearFrame).SetText(strconv.Itoa(year) + " год")
 
 	return &Table{
+		logger:     logger,
 		year:       year,
 		data:       data,
 		settings:   settings,

@@ -95,7 +95,8 @@ func (a *App) Upgrade(data *domain.GuiTableData) {
 	})
 
 	for year := a.settings.StartYear; year <= time.Now().Year(); year++ {
-		yearTable := table.NewTable(mainFrame, year, data, a.settings, a.tableController, a.updater, a.sumUpdater)
+		yearTable := table.NewTable(a.logger, mainFrame, year, data, a.settings, a.tableController,
+			a.updater, a.sumUpdater)
 		yearTable.Draw()
 	}
 

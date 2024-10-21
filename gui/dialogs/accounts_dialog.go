@@ -3,6 +3,7 @@ package dialogs
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"table-app/domain"
 	"table-app/gui/iface"
@@ -186,10 +187,10 @@ func (s *AccountsDialog) drawAccountRow(p *tree.Plan, idx int) {
 		})
 		fieldSum.SetText(format.FormatInt(s.accountList[idx].Sum))
 		fieldSum.OnChange(func(e events.Event) {
-			sum, err := strconv.Atoi(fieldSum.Text())
+			sum, err := strconv.Atoi(strings.Join(strings.Fields(fieldSum.Text()), ""))
 			if err != nil {
 				s.logger.Error(context.Background(), "convert account sum to int error: "+err.Error())
-				core.MessageSnackbar(s.dialogBody, "Неверный формат суммы: "+err.Error())
+				core.MessageSnackbar(s.dialogBody, "Неверный формат введенной суммы")
 				return
 			}
 
@@ -356,10 +357,10 @@ func (s *AccountsDialog) drawAddAccountFields(addAccountMainFrame *core.Frame) {
 		s.Min.X.Dp(500)
 	})
 	sumTextField.OnChange(func(e events.Event) {
-		sum, err := strconv.Atoi(sumTextField.Text())
+		sum, err := strconv.Atoi(strings.Join(strings.Fields(sumTextField.Text()), ""))
 		if err != nil {
 			s.logger.Error(context.Background(), "convert account sum to int error: "+err.Error())
-			core.MessageSnackbar(s.dialogBody, "Неверный формат суммы: "+err.Error())
+			core.MessageSnackbar(s.dialogBody, "Неверный формат введенной суммы")
 			return
 		}
 

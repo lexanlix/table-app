@@ -110,7 +110,7 @@ func (t Table) drawValuesGrid() *core.Frame {
 						tField.OnChange(func(e events.Event) {
 							val, err := strconv.Atoi(strings.Join(strings.Fields(tField.Text()), ""))
 							if err != nil {
-								core.MessageSnackbar(mainFrame, "Неверный формат данных: "+err.Error())
+								core.MessageSnackbar(mainFrame, "Неверный формат введенных числовых данных")
 								t.logger.Error(ctx, "convert tField to int: "+err.Error())
 								return
 							}

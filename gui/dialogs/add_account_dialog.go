@@ -3,6 +3,7 @@ package dialogs
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"table-app/domain"
 	"table-app/gui/iface"
@@ -168,10 +169,10 @@ func (s *AddAccountDialog) drawAddAccountFields(inputMainFrame *core.Frame) {
 		s.Min.X.Dp(500)
 	})
 	sumTextField.OnChange(func(e events.Event) {
-		sum, err := strconv.Atoi(sumTextField.Text())
+		sum, err := strconv.Atoi(strings.Join(strings.Fields(sumTextField.Text()), ""))
 		if err != nil {
 			s.logger.Error(context.Background(), "convert account sum to int error: "+err.Error())
-			core.MessageSnackbar(s.dialogBody, "Неверный формат суммы: "+err.Error())
+			core.MessageSnackbar(s.dialogBody, "Неверный формат введенной суммы")
 			return
 		}
 
