@@ -73,7 +73,7 @@ func (t Table) drawTableHead() *core.Frame {
 					})
 					core.Bind(&t.data.Categories[i][j].Name, tField.SetText(t.data.Categories[i][j].Name))
 
-					if nameLen > 15 {
+					if nameLen > 11 {
 						tField.SetTooltip(t.data.Categories[i][j].Name)
 					}
 

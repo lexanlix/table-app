@@ -31,7 +31,10 @@ func (t *UnderTable) drawLastUpdatingTime(mainUpdatingFrame *core.Frame) {
 	leftUpdatingFrame.Styler(func(s *styles.Style) {
 		s.Min.X.Dp(100)
 	})
-	core.NewText(leftUpdatingFrame).SetText("Обновлено: ")
+	core.NewText(leftUpdatingFrame).SetText("Обновлено: ").
+		Styler(func(s *styles.Style) {
+			s.Font.Weight = styles.WeightMedium
+		})
 
 	updatedTime := t.updatingController.GetLastUpdated()
 
@@ -58,7 +61,10 @@ func (t *UnderTable) drawLastRecord(mainUpdatingFrame *core.Frame) {
 	leftLastRecordFrame.Styler(func(s *styles.Style) {
 		s.Min.X.Dp(160)
 	})
-	core.NewText(leftLastRecordFrame).SetText("Последняя запись: ")
+	core.NewText(leftLastRecordFrame).SetText("Последняя запись: ").
+		Styler(func(s *styles.Style) {
+			s.Font.Weight = styles.WeightMedium
+		})
 
 	lastRecord := t.updatingController.GetLastRecord()
 

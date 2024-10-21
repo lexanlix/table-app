@@ -56,7 +56,11 @@ func (t *UnderTable) drawMainSum(mainFrame *core.Frame, sums domain.Sum) *core.T
 		s.CenterAll()
 		s.Gap.Zero()
 	})
-	core.NewText(textMainSumFrame).SetText("Общий бюджет:").SetTooltip(mainSumTooltip)
+	text := core.NewText(textMainSumFrame).SetText("Общий бюджет:")
+	text.Styler(func(s *styles.Style) {
+		s.Font.Weight = styles.WeightSemiBold
+	})
+	text.SetTooltip(mainSumTooltip)
 
 	valueMainSumFrame := core.NewFrame(mainSumFrame)
 	valueMainSumFrame.Styler(func(s *styles.Style) {
@@ -65,6 +69,9 @@ func (t *UnderTable) drawMainSum(mainFrame *core.Frame, sums domain.Sum) *core.T
 		s.CenterAll()
 	})
 	mainSumText := core.NewText(valueMainSumFrame).SetText(format.FormatInt(sums.MainSum))
+	mainSumText.Styler(func(s *styles.Style) {
+		s.Font.Weight = styles.WeightSemiBold
+	})
 	mainSumText.SetTooltip(mainSumTooltip)
 
 	return mainSumText

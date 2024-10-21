@@ -28,7 +28,11 @@ func (t *UnderTable) drawAccounts() {
 
 	textHeadAccountsFrame := core.NewFrame(mainAccountsFrame)
 	textHeadAccountsFrame.SetName("textHeadAccountsFrame")
-	core.NewText(textHeadAccountsFrame).SetText("Счета")
+	core.NewText(textHeadAccountsFrame).SetText("Счета").
+		Styler(func(s *styles.Style) {
+			s.Font.Weight = styles.WeightMedium
+			s.Font.Size.Dp(16)
+		})
 
 	accountListFrame := core.NewFrame(mainAccountsFrame)
 	accountListFrame.SetName("accountFrame")

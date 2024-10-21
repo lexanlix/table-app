@@ -65,10 +65,11 @@ func (a *App) createToolbar(categories [][]domain.Category) {
 			w.SetName("stretch")
 		})
 		tree.Add(p, func(w *core.Text) {
-			w.SetText("Начальная сумма: " + format.FormatInt(a.settings.StartMoney))
+			w.SetText("Начальная сумма: " + format.FormatInt(a.settings.StartMoney)).
+				SetTooltip("Устанавливается в настройках")
 
 			w.OnClick(func(e events.Event) {
-				core.MessageSnackbar(a.appBody, "Начальная сумма задается в настройках")
+				core.MessageSnackbar(a.appBody, "Начальная сумма устанавливается в настройках")
 			})
 		})
 	})
