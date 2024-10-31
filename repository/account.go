@@ -31,10 +31,10 @@ func (r Account) UpsertAll(ctx context.Context, accounts []domain.Account) error
 			if err != nil {
 				rollBackErr := tx.Rollback()
 				if rollBackErr != nil {
-					return errors.WithMessage(err, "rollback upsert transaction")
+					return errors.WithMessage(err, "rollback delete transaction")
 				}
 
-				return errors.WithMessage(err, "upsert account transaction")
+				return errors.WithMessage(err, "delete account transaction")
 			}
 
 			continue

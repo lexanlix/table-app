@@ -73,6 +73,7 @@ func (r *AccountCache) UpdateAccount(account domain.Account) error {
 	return nil
 }
 
+// Delete перезаписывает счет в кеше, которому был поставлен Deleted=true
 func (r *AccountCache) Delete(account domain.Account) {
 	idx, ok := r.accountIndexById[account.Id]
 	if !ok {
