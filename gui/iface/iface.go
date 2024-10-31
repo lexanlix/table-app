@@ -35,3 +35,11 @@ type AccountController interface {
 	UpdateList(ctx context.Context, list []domain.Account) error
 	GetSum(ctx context.Context) (domain.Sum, error)
 }
+
+type NoteController interface {
+	SaveAll(ctx context.Context) error
+	GetListPtr(ctx context.Context) (*domain.NoteList, error)
+	AddNote(ctx context.Context, note domain.Note)
+	UpdateNote(ctx context.Context, note domain.Note) error
+	DeleteNote(ctx context.Context, noteId string)
+}

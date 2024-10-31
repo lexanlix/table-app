@@ -36,6 +36,7 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	categoryRepo := repository.NewCategory(l.db, cfg.Storage)
 	updatingRepo := repository.NewUpdated(l.db)
 	accountRepo := repository.NewAccount(l.db)
+	noteRepo := repository.NewNote(l.db)
 
 	cellsData, err := tableRepo.GetAll(ctx)
 	if err != nil {
@@ -72,6 +73,8 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	accountCache.InitCache(accountData)
 	accountList := accountCache.GetListPtr()
 
+	noteCache := repository.NewNoteCache()
+
 	calculationCache := repository.NewCalculationCache(cfg.Settings)
 	err = calculationCache.InitCache(cellsList, categoryList)
 	if err != nil {
@@ -90,14 +93,17 @@ func (l Locator) Config(ctx context.Context, cfg conf.Remote, shutdownFunc func(
 	if err != nil {
 		return nil, errors.WithMessage(err, "create updating service")
 	}
+	noteService := service.NewNote(l.logger, noteRepo, noteCache)
 
 	accountService := service.NewAccount(l.logger, accountRepo, accountCache)
 
 	tableCtrl := controller.NewTable(l.logger, tableService, categoryService, calculationService, updatingService)
 	accountCtrl := controller.NewAccount(l.logger, accountService, calculationService)
 	updatingCtrl := controller.NewUpdating(l.logger, updatingService)
+	noteCtrl := controller.NewNote(l.logger, noteService)
 
-	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, accountCtrl, updatingCtrl, cfg.Settings, shutdownFunc)
+	guiApp := gui.NewApp(l.logger, gui.NewAppConfig(), tableCtrl, accountCtrl, updatingCtrl, noteCtrl, cfg.Settings,
+		shutdownFunc)
 	guiApp.Upgrade(&domain.GuiTableData{
 		Categories:        categoryList,
 		ValuesList:        cellsList,

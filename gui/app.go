@@ -25,6 +25,7 @@ type App struct {
 	tableController    iface.TableController
 	accountController  iface.AccountController
 	updatingController iface.UpdatingController
+	noteController     iface.NoteController
 	settings           conf.Setting
 	updater            *updaters.Updater
 	sumUpdater         *updaters.SumUpdater
@@ -37,6 +38,7 @@ func NewApp(
 	tableController iface.TableController,
 	accountController iface.AccountController,
 	updatingController iface.UpdatingController,
+	noteController iface.NoteController,
 	settings conf.Setting,
 	shutdownFunc func(),
 ) *App {
@@ -78,6 +80,7 @@ func NewApp(
 		tableController:    tableController,
 		accountController:  accountController,
 		updatingController: updatingController,
+		noteController:     noteController,
 		settings:           settings,
 		updater:            updater,
 		sumUpdater:         sumUpdater,

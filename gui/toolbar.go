@@ -54,11 +54,23 @@ func (a *App) createToolbar(categories [][]domain.Category) {
 					a.logger, a.appBody, a.accountController, a.sumUpdater.GetUpdateAccountsChan(),
 				)
 				if err != nil {
-					core.ErrorSnackbar(a.appBody, err, "Ошибка сохранения данных")
-					a.logger.Error(context.Background(), "save all data error", log.Any("err", err.Error()))
+					core.ErrorSnackbar(a.appBody, err, "Ошибка")
+					a.logger.Error(context.Background(), "open accounts dialog error", log.Any("err", err.Error()))
 					return
 				}
 				accountsDialog.Run()
+			})
+		})
+		tree.Add(p, func(w *core.Button) {
+			w.SetText("Заметки")
+			w.OnClick(func(e events.Event) {
+				notesDialog, err := dialogs.NewNotesDialog(a.logger, a.appBody, a.noteController)
+				if err != nil {
+					core.ErrorSnackbar(a.appBody, err, "Ошибка")
+					a.logger.Error(context.Background(), "open notes dialog error", log.Any("err", err.Error()))
+					return
+				}
+				notesDialog.Run()
 			})
 		})
 		tree.Add(p, func(w *core.Stretch) {
